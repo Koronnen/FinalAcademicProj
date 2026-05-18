@@ -94,7 +94,7 @@
         <session-timeout>
             30
         </session-timeout>
-    </session-config>
+    </session-config>x
     <welcome-file-list>
         <welcome-file>index.jsp</welcome-file>
     </welcome-file-list>
