@@ -32,14 +32,14 @@ public class LoginServlet extends HttpServlet {
     
     Connection conn;
 
-    public void init(ServletContext context) throws ServletException {
-            ServletContext context = getServletContext();
+    public void init() throws ServletException {
+        ServletContext context = getServletContext();
             try {	
                     Class.forName(context.getInitParameter("derby.jdbcClassName"));
                     System.out.println("jdbcClassName: " + context.getInitParameter("derby.jdbcClassName"));
                     String username = context.getInitParameter("derby.dbUserName");
                     String password = context.getInitParameter("derby.dbPassword");
-                    StringBuffer url = new StringBuffer(context.getInitParameter("jdbcDriverURL"))
+                    StringBuffer url = new StringBuffer(context.getInitParameter("derby.jdbcDriverURL"))
                             .append("://")
                             .append(context.getInitParameter("derby.dbHostName"))
                             .append(":")

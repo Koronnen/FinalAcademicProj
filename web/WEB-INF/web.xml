@@ -90,13 +90,26 @@
         <param-name>postgres.connectionProperties</param-name>
         <param-value/>
     </context-param>
+    
+    <context-param>
+        <param-name>SecurityKey</param-name>
+        <param-value>pimenteltomale67</param-value>
+    </context-param>
+    <context-param>
+        <param-name>CipherAlgorithm</param-name>
+        <param-value>AES</param-value>
+    </context-param>
+    <context-param>
+        <param-name>CipherMode</param-name>
+        <param-value>ECB</param-value>
+    </context-param>
+    <context-param>
+        <param-name>CipherPaddingScheme</param-name>
+        <param-value>PKCS5Padding</param-value>
+    </context-param>
     <servlet>
         <servlet-name>loginServlet</servlet-name>
         <servlet-class>controller.LoginServlet</servlet-class>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>loginServlet</servlet-name>
-        <url-pattern>/loginServlet</url-pattern>
         <init-param>
             <param-name>SecretKey</param-name>
             <param-value>pimentel67tomale</param-value>
@@ -105,6 +118,10 @@
             <param-name>CaptchaSecretKey</param-name>
             <param-value>6LfuAPIsAAAAAGuMrWw28J4yd79bJHQKpfOAf_9f</param-value>
         </init-param>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>loginServlet</servlet-name>
+        <url-pattern>/loginServlet</url-pattern>
     </servlet-mapping>
     <session-config>
         <session-timeout>

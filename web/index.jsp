@@ -18,19 +18,19 @@
             
             <form id="loginForm" onsubmit="handleLogin(event)" action="${pageContext.request.contextPath}/loginServlet" method="POST">
                 <div class="input-group">
-                    <input type="email" id="email" required placeholder=" ">
+                    <input type="email" id="email" required placeholder=" " name="email">
                     <label for="email">Email Address</label>
                     <div class="input-line"></div>
                 </div>
 
                 <div class="input-group">
-                    <input type="password" id="password" required placeholder=" ">
+                    <input type="password" id="password" required placeholder=" " name="password">
                     <label for="password">Password</label>
                     <div class="input-line"></div>
                 </div>
 
                 <div class="captcha-container">
-                    <div class="g-recaptcha" data-sitekey="6Leisq4sAAAAAE0CRnKzI-jvprNJ8KfV2J5scKqB"></div>
+                    <div class="g-recaptcha" data-sitekey="6LfuAPIsAAAAAGghWubdgs_wrykIdva3AOUs9NnD"></div>
                     <br/>
                 </div>
 
