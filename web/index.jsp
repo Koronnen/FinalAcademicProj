@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Portal</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles/indexStyles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Open+Sans:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     </head>
 <body>
     <div class="login-container">
@@ -14,7 +16,7 @@
                 <p>Please enter your details to sign in</p>
             </div>
             
-            <form id="loginForm" onsubmit="handleLogin(event)">
+            <form id="loginForm" onsubmit="handleLogin(event)" action="${pageContext.request.contextPath}/loginServlet" method="POST">
                 <div class="input-group">
                     <input type="email" id="email" required placeholder=" ">
                     <label for="email">Email Address</label>
@@ -30,15 +32,6 @@
                 <div class="captcha-container">
                     <div class="g-recaptcha" data-sitekey="6Leisq4sAAAAAE0CRnKzI-jvprNJ8KfV2J5scKqB"></div>
                     <br/>
-                </div>
-
-                <div class="form-actions">
-                    <label class="remember-me">
-                        <input type="checkbox">
-                        <span class="checkmark"></span>
-                        Remember me
-                    </label>
-                    <a href="#" class="forgot-password">Forgot password?</a>
                 </div>
 
                 <button type="submit" class="submit-btn">

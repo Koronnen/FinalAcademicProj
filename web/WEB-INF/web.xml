@@ -88,13 +88,37 @@
     </context-param>
     <context-param>
         <param-name>postgres.connectionProperties</param-name>
-        <param-value></param-value>
+        <param-value/>
     </context-param>
+    <servlet>
+        <servlet-name>loginServlet</servlet-name>
+        <servlet-class>controller.LoginServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>loginServlet</servlet-name>
+        <url-pattern>/loginServlet</url-pattern>
+        <init-param>
+            <param-name>SecretKey</param-name>
+            <param-value>pimentel67tomale</param-value>
+        </init-param>
+        <init-param>
+            <param-name>CaptchaSecretKey</param-name>
+            <param-value>6LfuAPIsAAAAAGuMrWw28J4yd79bJHQKpfOAf_9f</param-value>
+        </init-param>
+    </servlet-mapping>
     <session-config>
         <session-timeout>
             30
         </session-timeout>
-    </session-config>x
+    </session-config>
+    <error-page>
+        <exception-type>exception.InvalidSession</exception-type>
+        <location>/ErrorPages/error_session.jsp</location>
+    </error-page>
+    <error-page>
+        <exception-type>exception.AuthenticationException</exception-type>
+        <location>/ErrorPages/error_3.jsp</location>
+    </error-page>
     <welcome-file-list>
         <welcome-file>index.jsp</welcome-file>
     </welcome-file-list>
