@@ -1,5 +1,22 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.util.*" %>
+<%
+    // 1. Get the current active session state
+    HttpSession activeSession = request.getSession(false);
+    
+    // 2. Fetch the integer role status safely
+    Object roleObj = (activeSession != null) ? activeSession.getAttribute("role") : null;
+    int userType = (roleObj instanceof Integer) ? (Integer) roleObj : -1;
+
+    // 3. Kick them out to index.jsp if they are not userType 1 (Admin)
+    if (userType != 1) {
+        if (activeSession != null) {
+            activeSession.setAttribute("loginError", "Unauthorized access. Administrator privileges required.");
+        }
+        response.sendRedirect(request.getContextPath() + "/index.jsp");
+        return; // Terminates page rendering immediately
+    }
+%>
 <!DOCTYPE html>
 <html lang="en">
 <head>

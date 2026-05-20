@@ -90,6 +90,7 @@ public class LoginServlet extends HttpServlet {
                 String id = getID(email);
                 s.setAttribute("email", email);
                 s.setAttribute("USER_ID", id);
+                s.setAttribute("role", userType);
                 if (userType == 1){
                     response.sendRedirect(request.getContextPath() + "/AdminDashboardServlet");
                 }

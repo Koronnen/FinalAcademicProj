@@ -101,7 +101,7 @@
         <param-value>PKCS5Padding</param-value>
     </context-param>
     <servlet>
-        <servlet-name>loginServlet</servlet-name>
+        <servlet-name>LoginServlet</servlet-name>
         <servlet-class>controller.LoginServlet</servlet-class>
         <init-param>
             <param-name>SecretKey</param-name>
@@ -117,7 +117,7 @@
         <servlet-class>controller.AdminDashboardServlet</servlet-class>
     </servlet>
     <servlet-mapping>
-        <servlet-name>loginServlet</servlet-name>
+        <servlet-name>LoginServlet</servlet-name>
         <url-pattern>/loginServlet</url-pattern>
     </servlet-mapping>
     <servlet-mapping>

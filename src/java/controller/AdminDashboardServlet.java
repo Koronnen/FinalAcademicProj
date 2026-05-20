@@ -13,8 +13,25 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 public class AdminDashboardServlet extends HttpServlet {
+    
+    private boolean isAuthorizedAdmin(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return false;
+        }
+
+        // Retrieve the role object from the session
+        Object roleObj = session.getAttribute("role");
+        if (roleObj instanceof Integer) {
+            int userType = (Integer) roleObj;
+            return userType == 1; // True if they are an Admin
+        }
+
+        return false;
+    }
     
     private Connection getDerbyConnection() throws SQLException, ClassNotFoundException {
         String driver = getServletContext().getInitParameter("derby.jdbcClassName");
@@ -87,6 +104,16 @@ public class AdminDashboardServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // Session Role Verification Check
+        if (!isAuthorizedAdmin(request)) {
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                session.setAttribute("loginError", "Unauthorized access. Administrator privileges required.");
+            }
+            response.sendRedirect(request.getContextPath() + "/index.jsp");
+            return; // Terminate execution immediately to stop rendering unauthorized content
+        }
+        
         List<Map<String, String>> instructors = new ArrayList<>();
         List<Map<String, String>> students = new ArrayList<>();
         List<Map<String, String>> courses = new ArrayList<>();
@@ -202,8 +229,19 @@ public class AdminDashboardServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // Session Role Verification
+        if (!isAuthorizedAdmin(request)) {
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                session.setAttribute("loginError", "Unauthorized write action. Administrator privileges required.");
+            }
+            response.sendRedirect(request.getContextPath() + "/index.jsp");
+            return; // Terminate immediately to discard the submission parameters
+        }
+
         String action = request.getParameter("action");
-        String authorId = "USR000001"; 
+        // pull actual user ID from the confirmed session parameters rather than relying on a hardcoded string
+        String authorId = (String) request.getSession().getAttribute("USER_ID"); 
 
         try (Connection conn = getMySQLConnection()) {
             conn.setAutoCommit(true);
