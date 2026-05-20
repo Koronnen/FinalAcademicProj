@@ -5,6 +5,10 @@
         <param-value>org.apache.derby.jdbc.ClientDriver</param-value>
     </context-param>
     <context-param>
+        <param-name>derby.databaseName</param-name>
+        <param-value>LoginDB</param-value>
+    </context-param>
+    <context-param>
         <param-name>derby.dbUserName</param-name>
         <param-value>app</param-value>
     </context-param>

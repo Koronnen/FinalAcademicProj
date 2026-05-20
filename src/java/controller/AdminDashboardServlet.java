@@ -15,6 +15,19 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 public class AdminDashboardServlet extends HttpServlet {
+    
+    private Connection getDerbyConnection() throws SQLException, ClassNotFoundException {
+        String driver = getServletContext().getInitParameter("derby.jdbcClassName");
+        String url = getServletContext().getInitParameter("derby.jdbcDriverURL") + "://" +
+                     getServletContext().getInitParameter("derby.dbHostName") + ":" +
+                     getServletContext().getInitParameter("derby.dbPort") + "/" +
+                     getServletContext().getInitParameter("derby.databaseName");
+        String user = getServletContext().getInitParameter("derby.dbUserName");
+        String pass = getServletContext().getInitParameter("derby.dbPassword");
+
+        Class.forName(driver);
+        return DriverManager.getConnection(url, user, pass);
+    }
 
     private Connection getMySQLConnection() throws SQLException, ClassNotFoundException {
         String driver = getServletContext().getInitParameter("mysql.jdbcClassName");
@@ -199,13 +212,32 @@ public class AdminDashboardServlet extends HttpServlet {
                     String nextInstId = generateNextCustomID(conn, "INSTRUCTOR", "INST_ID", "INS");
 
                     String uSql = "INSERT INTO USERS (USER_ID, USER_ROLE, EMAIL, PASSWORD) VALUES (?, 'INSTRUCTOR', ?, ?)";
+
+                    // 1. Write to MySQL
                     try (PreparedStatement ps = conn.prepareStatement(uSql)) {
                         ps.setString(1, nextUserId);
                         ps.setString(2, request.getParameter("email"));
                         ps.setString(3, encryptedPassword);
                         ps.executeUpdate();
                     }
-                    
+
+                    // 2. Mirror directly to Derby
+                    try (Connection derbyConn = getDerbyConnection()) {
+                        derbyConn.setAutoCommit(false);
+                        try (PreparedStatement psDerby = derbyConn.prepareStatement(uSql)) {
+                            psDerby.setString(1, nextUserId);
+                            psDerby.setString(2, request.getParameter("email"));
+                            psDerby.setString(3, encryptedPassword);
+                            psDerby.executeUpdate();
+                        }
+                        derbyConn.commit(); // Commit Derby entry
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        System.err.println("Derby Mirroring Failed: " + e.getMessage());
+                        throw new SQLException("Derby sync failure, rolling back transaction.", e);
+                    }
+
+                    // 3. Write to Instructor Table in MySQL
                     String iSql = "INSERT INTO INSTRUCTOR (INST_ID, USER_ID, FNAME, LNAME, EMAIL) VALUES (?, ?, ?, ?, ?)";
                     try (PreparedStatement ps = conn.prepareStatement(iSql)) {
                         ps.setString(1, nextInstId);
@@ -215,7 +247,8 @@ public class AdminDashboardServlet extends HttpServlet {
                         ps.setString(5, request.getParameter("email"));
                         ps.executeUpdate();
                     }
-                    conn.commit();
+
+                    conn.commit(); // Commit MySQL entry
                     logAction("Created Alphanumeric Sequential Instructor Entry: " + nextInstId, authorId);
                     break;
                 }
@@ -350,6 +383,8 @@ public class AdminDashboardServlet extends HttpServlet {
                     }
 
                     String uSql = "INSERT INTO USERS (USER_ID, USER_ROLE, EMAIL, PASSWORD) VALUES (?, 'STUDENT', ?, ?)";
+
+                    // 1. Write to MySQL
                     try (PreparedStatement ps = conn.prepareStatement(uSql)) {
                         ps.setString(1, nextUserId);
                         ps.setString(2, email);
@@ -357,6 +392,22 @@ public class AdminDashboardServlet extends HttpServlet {
                         ps.executeUpdate();
                     }
 
+                    // 2. Mirror directly to Derby
+                    try (Connection derbyConn = getDerbyConnection()) {
+                        derbyConn.setAutoCommit(false);
+                        try (PreparedStatement psDerby = derbyConn.prepareStatement(uSql)) {
+                            psDerby.setString(1, nextUserId);
+                            psDerby.setString(2, email);
+                            psDerby.setString(3, encryptedPassword);
+                            psDerby.executeUpdate();
+                        }
+                        derbyConn.commit(); // Commit Derby entry
+                    } catch (Exception e) {
+                        System.err.println("Derby Mirroring Failed: " + e.getMessage());
+                        throw new SQLException("Derby sync failure, rolling back transaction.", e);
+                    }
+
+                    // 3. Write to Student Table in MySQL
                     String sSql = "INSERT INTO STUDENT (STU_ID, USER_ID, FNAME, LNAME, EMAIL) VALUES (?, ?, ?, ?, ?)";
                     try (PreparedStatement ps = conn.prepareStatement(sSql)) {
                         ps.setString(1, nextStuId);
@@ -367,7 +418,7 @@ public class AdminDashboardServlet extends HttpServlet {
                         ps.executeUpdate();
                     }
 
-                    conn.commit(); // Commit saved parameters cleanly
+                    conn.commit(); // Commit saved parameters cleanly to MySQL
                     logAction("Created Student Profile: " + nextStuId, authorId);
                     break;
                 }
