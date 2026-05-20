@@ -145,6 +145,11 @@
             <div class="sidebar-menu-item" id="link-courses" onclick="switchDashboardTab('panel-courses')">
                 <i class="fa-solid fa-book-bookmark"></i>Curriculum Courses
             </div>
+            <hr class="text-white-50 my-2">
+
+            <a href="${pageContext.request.contextPath}/LogOutServlet" class="sidebar-menu-item text-decoration-none d-block text-danger border-0 bg-transparent mt-2">
+                <i class="fa-solid fa-right-from-bracket me-3 text-danger"></i>Sign Out Session
+            </a>
         </div>
     </div>
 
