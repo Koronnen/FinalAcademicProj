@@ -24,6 +24,9 @@
         <param-name>derby.dbPort</param-name>
         <param-value>1527</param-value>
     </context-param>
+    
+    
+    
     <context-param>
         <param-name>mysql.databaseName</param-name>
         <param-value>activelearning</param-value>
@@ -56,6 +59,9 @@
         <param-name>mysql.connectionProperties</param-name>
         <param-value>?zeroDateTimeBehavior=CONVERT_TO_NULL</param-value>
     </context-param>
+    
+    
+    
     <context-param>
         <param-name>postgres.databaseName</param-name>
         <param-value>postgres</param-value>
@@ -88,6 +94,8 @@
         <param-name>postgres.connectionProperties</param-name>
         <param-value/>
     </context-param>
+    
+    
     <context-param>
         <param-name>SecurityKey</param-name>
         <param-value>pimenteltomale67</param-value>
@@ -118,7 +126,11 @@
     </servlet>
     <servlet>
         <servlet-name>signUpServlet</servlet-name>
-        <servlet-class>controller.signUpServlet</servlet-class>
+        <servlet-class>controller.SignUpServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>StudentServlet</servlet-name>
+        <servlet-class>controller.StudentServlet</servlet-class>
     </servlet>
     <servlet-mapping>
         <servlet-name>loginServlet</servlet-name>
@@ -127,6 +139,10 @@
     <servlet-mapping>
         <servlet-name>signUpServlet</servlet-name>
         <url-pattern>/signUpServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>StudentServlet</servlet-name>
+        <url-pattern>/StudentServlet</url-pattern>
     </servlet-mapping>
     <session-config>
         <session-timeout>

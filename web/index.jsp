@@ -28,7 +28,7 @@
                 } 
             %>
             
-            <form id="loginForm" onsubmit="handleLogin(event)" action="${pageContext.request.contextPath}/loginServlet" method="POST">
+            <form id="loginForm" onsubmit="handleLogin(event)" action="${pageContext.request.contextPath}/LoginServlet" method="POST">
                 <div class="input-group">
                     <input type="email" id="email" required placeholder=" " name="email">
                     <label for="email">Email Address</label>

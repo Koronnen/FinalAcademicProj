@@ -26,22 +26,22 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import org.json.JSONObject;
 
-public class signUpServlet extends HttpServlet {
+public class SignUpServlet extends HttpServlet {
 
     Connection conn;
 
     public void init() throws ServletException {
         ServletContext context = getServletContext();
             try {	
-                    Class.forName(context.getInitParameter("derby.jdbcClassName"));
-                    System.out.println("jdbcClassName: " + context.getInitParameter("derby.jdbcClassName"));
-                    String username = context.getInitParameter("derby.dbUserName");
-                    String password = context.getInitParameter("derby.dbPassword");
-                    StringBuffer url = new StringBuffer(context.getInitParameter("derby.jdbcDriverURL"))
+                    Class.forName(context.getInitParameter("mysql.jdbcClassName"));
+                    System.out.println("jdbcClassName: " + context.getInitParameter("mysql.jdbcClassName"));
+                    String username = context.getInitParameter("mysql.dbUserName");
+                    String password = context.getInitParameter("mysql.dbPassword");
+                    StringBuffer url = new StringBuffer(context.getInitParameter("mysql.jdbcDriverURL"))
                             .append("://")
-                            .append(context.getInitParameter("derby.dbHostName"))
+                            .append(context.getInitParameter("mysql.dbHostName"))
                             .append(":")
-                            .append(context.getInitParameter("derby.dbPort"))
+                            .append(context.getInitParameter("mysql.dbPort"))
                             .append("/")
                             .append("LoginDB");
                     conn = 
@@ -90,7 +90,7 @@ public class signUpServlet extends HttpServlet {
         
         if(isValid){
             if(!userExist){
-                boolean registerSuccess = registerStudent(email, pass);
+                boolean registerSuccess = registerStudent(email, pass, request);
                 if (registerSuccess) {
                     s.setAttribute("successMessage", "Registration successful!");
                     response.sendRedirect("index.jsp");
@@ -99,11 +99,12 @@ public class signUpServlet extends HttpServlet {
         }
         
     }
-    public boolean registerStudent(String email, String password){
+    public boolean registerStudent(String email, String password, HttpServletRequest request){
         boolean success = false;
-        String insertStr = "INSERT INTO USERS(USER_ID, USER_ROLE, EMAIL, PASSWORD) VALUES (?, 'STUDENT', ?, ?)";
+        HttpSession s = request.getSession();
         String selectStr = "SELECT USER_ID, USER_ROLE, EMAIL, PASSWORD FROM USERS";
-        
+        String insertStr = "INSERT INTO USERS(USER_ID, USER_ROLE, EMAIL, PASSWORD) VALUES (?, 'STUDENT', ?, ?)";
+                
         try(PreparedStatement ps = conn.prepareStatement(selectStr);
             ResultSet rs = ps.executeQuery()){
             
@@ -132,6 +133,8 @@ public class signUpServlet extends HttpServlet {
                 if(rowsAffected>0){
                     success = true;
                 }
+                s.setAttribute("email", email);
+                s.setAttribute("USER_ID", usrID);
                 ps.close();
             }catch(SQLException err){
                 err.printStackTrace();;
