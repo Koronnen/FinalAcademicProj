@@ -28,12 +28,6 @@
         <param-name>derby.dbPort</param-name>
         <param-value>1527</param-value>
     </context-param>
-<<<<<<< HEAD
-    
-    
-    
-=======
->>>>>>> 4362084024fc17274e411fcb644f47ea796f296c
     <context-param>
         <param-name>mysql.databaseName</param-name>
         <param-value>activelearning?useSSL=false&amp;allowPublicKeyRetrieval=true&amp;serverTimezone=UTC</param-value>
@@ -63,16 +57,10 @@
         <param-value>3310</param-value>
     </context-param>
     <context-param>
-<<<<<<< HEAD
         <param-name>mysql.connectionProperties</param-name>
         <param-value>?zeroDateTimeBehavior=CONVERT_TO_NULL</param-value>
     </context-param>
-    
-    
-    
     <context-param>
-=======
->>>>>>> 4362084024fc17274e411fcb644f47ea796f296c
         <param-name>postgres.databaseName</param-name>
         <param-value>logs?sslmode=disable</param-value>
     </context-param>
@@ -101,17 +89,12 @@
         <param-value>5432</param-value>
     </context-param>
     <context-param>
-<<<<<<< HEAD
         <param-name>postgres.connectionProperties</param-name>
         <param-value/>
     </context-param>
-    
-    
     <context-param>
-=======
->>>>>>> 4362084024fc17274e411fcb644f47ea796f296c
         <param-name>SecurityKey</param-name>
-        <param-value>pimenteltomale67</param-value>
+        <param-value>marychildacademy</param-value>
     </context-param>
     <context-param>
         <param-name>CipherAlgorithm</param-name>
@@ -126,7 +109,7 @@
         <param-value>PKCS5Padding</param-value>
     </context-param>
     <servlet>
-        <servlet-name>loginServlet</servlet-name>
+        <servlet-name>LoginServlet</servlet-name>
         <servlet-class>controller.LoginServlet</servlet-class>
         <init-param>
             <param-name>SecretKey</param-name>
@@ -138,34 +121,40 @@
         </init-param>
     </servlet>
     <servlet>
-<<<<<<< HEAD
-        <servlet-name>signUpServlet</servlet-name>
+        <servlet-name>SignUpServlet</servlet-name>
         <servlet-class>controller.SignUpServlet</servlet-class>
+        <init-param>
+            <param-name>SecretKey</param-name>
+            <param-value>marychildacademy</param-value>
+        </init-param>
+        <init-param>
+            <param-name>CaptchaSecretKey</param-name>
+            <param-value>6LfuAPIsAAAAAGuMrWw28J4yd79bJHQKpfOAf_9f</param-value>
+        </init-param>
+    </servlet>
+    <servlet>
+        <servlet-name>AdminDashboardServlet</servlet-name>
+        <servlet-class>controller.AdminDashboardServlet</servlet-class>
     </servlet>
     <servlet>
         <servlet-name>StudentServlet</servlet-name>
         <servlet-class>controller.StudentServlet</servlet-class>
-=======
-        <servlet-name>AdminDashboardServlet</servlet-name>
-        <servlet-class>controller.AdminDashboardServlet</servlet-class>
->>>>>>> 4362084024fc17274e411fcb644f47ea796f296c
     </servlet>
     <servlet-mapping>
-        <servlet-name>loginServlet</servlet-name>
+        <servlet-name>LoginServlet</servlet-name>
         <url-pattern>/loginServlet</url-pattern>
-    </servlet-mapping>
-    <servlet-mapping>
-<<<<<<< HEAD
-        <servlet-name>signUpServlet</servlet-name>
-        <url-pattern>/signUpServlet</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
         <servlet-name>StudentServlet</servlet-name>
         <url-pattern>/StudentServlet</url-pattern>
-=======
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>SignUpServlet</servlet-name>
+        <url-pattern>/SignUpServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
         <servlet-name>AdminDashboardServlet</servlet-name>
         <url-pattern>/AdminDashboardServlet</url-pattern>
->>>>>>> 4362084024fc17274e411fcb644f47ea796f296c
     </servlet-mapping>
     <session-config>
         <session-timeout>
@@ -182,7 +171,7 @@
     </error-page>
     <error-page>
         <exception-type>exception.UserException</exception-type>
-        <location>/ErrorPages/</location>
+        <location>/ErrorPages/error_user.jsp</location>
     </error-page>
     <welcome-file-list>
         <welcome-file>signUp.jsp</welcome-file>

@@ -9,12 +9,15 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 public class StudentServlet extends HttpServlet {
     
@@ -47,17 +50,7 @@ public class StudentServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
         throws ServletException, IOException {
-    response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-        response.setHeader("Pragma", "no-cache");
-        response.setDateHeader("Expires", 0);
-        
-        // 2. Session and Security Guard Check
         HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("USER_ID") == null) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied.");
-            return;
-        }
-        
         // 3. Role Restriction Protection
         String userRole = (String) session.getAttribute("USER_ROLE");
         if (!"STUDENT".equalsIgnoreCase(userRole)) {
@@ -67,8 +60,49 @@ public class StudentServlet extends HttpServlet {
 
         String usrID = (String) session.getAttribute("USER_ID");
         String displayName = "Student";
-        String dbStuId = "", dbFname = "", dbLname = "", dbEmail = "";
-}
+        String dbStudentId = "", dbFName = "", dbLName = "", dbEmail = "";
+        
+        try(Connection sqlConn = getMySQLConnection();
+            Connection derbyConn = getDerbyConnection();
+            PreparedStatement ps = sqlConn.prepareStatement("SELECT * FROM STUDENT WHERE USER_ID = ?")){
+            ps.setString(1, usrID);
+            
+            try(ResultSet rs = ps.executeQuery()){
+                if (rs.next()) {
+                    dbStudentId = rs.getString("STU_ID");
+                    dbFName = rs.getString("FNAME");
+                    dbLName = rs.getString("LNAME");
+                    dbEmail = rs.getString("EMAIL");
+                    
+                    if (dbFName != null && !dbFName.trim().isEmpty()) {
+                        displayName = dbFName;
+                    }
+                } else if(derbyConn != null){
+                    try(PreparedStatement psD = sqlConn.prepareStatement("SELECT EMAIL FROM USERS WHERE USER_ID = ?")){                  
+                    ps.setString(1, usrID);
+            
+                    try(ResultSet rsD = psD.executeQuery()){
+                        if (rs.next()) {
+                            dbStudentId = rs.getString("STU_ID");
+                            dbFName = rs.getString("FNAME");
+                            dbLName = rs.getString("LNAME");
+                            dbEmail = rs.getString("EMAIL");
+
+                            if (dbFName != null && !dbFName.trim().isEmpty()) {
+                                displayName = dbFName;
+                            }
+                        }
+                    }
+                }
+            }
+            }
+        }catch(Exception e){
+            e.printStackTrace();
+            //DATABASE ERROR 
+        }
+        
+    
+    }
     
     
     @Override

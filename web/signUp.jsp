@@ -8,6 +8,7 @@
     
     <link rel="stylesheet" href="styles/indexStyles.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Open+Sans:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
 <body>
     <div class="login-container">
@@ -27,7 +28,7 @@
                     session.removeAttribute("captchaError"); 
                 } 
             %>
-            <form id="signUpForm" action="${pageContext.request.contextPath}/signUpServlet" method="POST">
+            <form id="signUpForm" action="${pageContext.request.contextPath}/SignUpServlet" method="POST">
                 
                 <div class="input-group">
                     <input type="email" id="signEmail" required placeholder=" " name="signEmail">
@@ -41,6 +42,12 @@
                     <div class="input-line"></div>
                 </div>
                 
+                <div class="input-group">
+                    <input type="password" id="confirmPass" required placeholder=" " name="confirmPass">
+                    <label for="confirmPass">Confirm Password</label>
+                    <div class="input-line"></div>
+                </div>
+                
                 <div class="captcha-container">
                     <div class="g-recaptcha" data-sitekey="6LfuAPIsAAAAAGghWubdgs_wrykIdva3AOUs9NnD"></div>
                     <br/>
@@ -51,9 +58,8 @@
                     <div class="btn-loader"></div>
                 </button>
             </form>
-
             <div class="login-footer">
-                <p>Already have an account? <a href="${pageContext.request.contextPath}/login.jsp">Log in</a></p>
+                <p>Already have an account? <a href="${pageContext.request.contextPath}/index.jsp">Log in</a></p>
             </div>
         </div>
     </div>

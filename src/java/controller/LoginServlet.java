@@ -94,10 +94,10 @@ public class LoginServlet extends HttpServlet {
                     response.sendRedirect(request.getContextPath() + "/AdminDashboardServlet");
                 }
                 else if(userType == 2){
-                    response.sendRedirect("StudentDashboard.jsp");
+                    response.sendRedirect(request.getContextPath() +"/StudentServlet");
                 }
                 else if(userType == 3){
-                    response.sendRedirect("InstructorDashboard.jsp");
+                    response.sendRedirect(request.getContextPath() +" ");
                 }
                 return; 
             } else {

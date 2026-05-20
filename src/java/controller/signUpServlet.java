@@ -1,15 +1,9 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package controller;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.sql.Connection;
@@ -28,37 +22,43 @@ import org.json.JSONObject;
 
 public class SignUpServlet extends HttpServlet {
 
-    Connection conn;
-
-    public void init() throws ServletException {
-        ServletContext context = getServletContext();
-            try {	
-                    Class.forName(context.getInitParameter("mysql.jdbcClassName"));
-                    System.out.println("jdbcClassName: " + context.getInitParameter("mysql.jdbcClassName"));
-                    String username = context.getInitParameter("mysql.dbUserName");
-                    String password = context.getInitParameter("mysql.dbPassword");
-                    StringBuffer url = new StringBuffer(context.getInitParameter("mysql.jdbcDriverURL"))
-                            .append("://")
-                            .append(context.getInitParameter("mysql.dbHostName"))
-                            .append(":")
-                            .append(context.getInitParameter("mysql.dbPort"))
-                            .append("/")
-                            .append("LoginDB");
-                    conn = 
-                      DriverManager.getConnection(url.toString(),username,password);
-                    System.out.println("Done loading databases");
-            } catch (SQLException sqle){
-                    System.out.println("SQLException error occured - " 
-                            + sqle.getMessage());
-            } catch (ClassNotFoundException nfe){
-                    System.out.println("ClassNotFoundException error occured - " 
-                    + nfe.getMessage());
-            }
-    }
+    private Connection derbyConn;
+    private Connection mysqlConn;
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+    public void init() throws ServletException {
+        ServletContext context = getServletContext();
+        try {   
+            Class.forName(context.getInitParameter("derby.jdbcClassName"));
+            String derbyUser = context.getInitParameter("derby.dbUserName");
+            String derbyPass = context.getInitParameter("derby.dbPassword");
+            StringBuilder derbyUrl = new StringBuilder(context.getInitParameter("derby.jdbcDriverURL"))
+                    .append("://")
+                    .append(context.getInitParameter("derby.dbHostName"))
+                    .append(":")
+                    .append(context.getInitParameter("derby.dbPort"))
+                    .append("/")
+                    .append(context.getInitParameter("derby.databaseName"));
+            derbyConn = DriverManager.getConnection(derbyUrl.toString(), derbyUser, derbyPass);
+            System.out.println("Derby Database Connected Successfully.");
+
+            Class.forName(context.getInitParameter("mysql.jdbcClassName"));
+            String mysqlUser = context.getInitParameter("mysql.dbUserName");
+            String mysqlPass = context.getInitParameter("mysql.dbPassword");
+            StringBuilder mysqlUrl = new StringBuilder(context.getInitParameter("mysql.jdbcDriverURL"))
+                    .append("://")
+                    .append(context.getInitParameter("mysql.dbHostName"))
+                    .append(":")
+                    .append(context.getInitParameter("mysql.dbPort"))
+                    .append("/")
+                    .append(context.getInitParameter("mysql.databaseName"));
+            mysqlConn = DriverManager.getConnection(mysqlUrl.toString(), mysqlUser, mysqlPass);
+            System.out.println("MySQL Database Connected Successfully.");
+
+        } catch (SQLException | ClassNotFoundException e) {
+            System.out.println("Database Initialization Error: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -66,135 +66,208 @@ public class SignUpServlet extends HttpServlet {
             throws ServletException, IOException {
         ServletContext context = getServletContext();
         HttpSession s = request.getSession();
+        
         String gRecaptchaResponse = request.getParameter("g-recaptcha-response");
-        
         String email = request.getParameter("signEmail");
-        String rawPass = request.getParameter("signPassword").trim();
+        String rawPass = request.getParameter("signPassword");
+        String confirmPass = request.getParameter("confirmPass");
         
-        if (gRecaptchaResponse == null || gRecaptchaResponse.isEmpty()) {
-            s.setAttribute("captchaError", "Please complete the CAPTCHA.");
-            System.out.println("Invalid captcha");
-            response.sendRedirect("index.jsp"); 
-            return; 
-        }
-        
-        if(email.trim().isEmpty() || email == null || rawPass.trim().isEmpty() || rawPass == null){
+        if (email == null || email.trim().isEmpty() || rawPass == null || rawPass.trim().isEmpty()) {
             s.setAttribute("noInput", "Please enter your email and password.");
             response.sendRedirect("signUp.jsp");
             return;
         }
-        
-        String pass = Security.encrypt(rawPass, context);
-        boolean userExist = checkUser(email, pass);
-        boolean isValid = verifyCaptcha(gRecaptchaResponse);
-        
-        if(isValid){
-            if(!userExist){
-                boolean registerSuccess = registerStudent(email, pass, request);
-                if (registerSuccess) {
-                    s.setAttribute("successMessage", "Registration successful!");
-                    response.sendRedirect("index.jsp");
-                }
-            }
+
+        rawPass = rawPass.trim();
+        confirmPass = (confirmPass != null) ? confirmPass.trim() : "";
+
+        if (gRecaptchaResponse == null || gRecaptchaResponse.isEmpty()) {
+            s.setAttribute("captchaError", "Please complete the CAPTCHA.");
+            response.sendRedirect("signUp.jsp"); 
+            return; 
         }
         
+        if (!rawPass.equals(confirmPass)) {
+            s.setAttribute("incorrectPass", "Password does not match.");
+            response.sendRedirect("signUp.jsp");
+            return;
+        }
+        
+        boolean isValid = verifyCaptcha(gRecaptchaResponse);
+        if (!isValid) {
+            s.setAttribute("captchaError", "CAPTCHA verification failed. Try again.");
+            response.sendRedirect("signUp.jsp");
+            return;
+        }
+
+        String pass = Security.encrypt(rawPass, context);
+        boolean userExist = checkUserInDerby(email); 
+
+        if (!userExist) {
+            boolean registerSuccess = registerStudentDualWrite(email, pass, request);
+            if (registerSuccess) {
+                s.setAttribute("successMessage", "Registration successful in both systems!");
+                response.sendRedirect("index.jsp");
+            } else {
+                s.setAttribute("captchaError", "Registration failed during database synchronization.");
+                response.sendRedirect("signUp.jsp");
+            }
+        } else {
+            s.setAttribute("captchaError", "An account with that email already exists.");
+            response.sendRedirect("signUp.jsp");
+        }
     }
-    public boolean registerStudent(String email, String password, HttpServletRequest request){
-        boolean success = false;
+
+    public boolean registerStudentDualWrite(String email, String password, HttpServletRequest request) {
         HttpSession s = request.getSession();
-        String selectStr = "SELECT USER_ID, USER_ROLE, EMAIL, PASSWORD FROM USERS";
-        String insertStr = "INSERT INTO USERS(USER_ID, USER_ROLE, EMAIL, PASSWORD) VALUES (?, 'STUDENT', ?, ?)";
-                
-        try(PreparedStatement ps = conn.prepareStatement(selectStr);
-            ResultSet rs = ps.executeQuery()){
+        
+        String selectUsers = "SELECT USER_ID FROM USERS";
+        String selectStudents = "SELECT STU_ID FROM STUDENT";
+        
+        String insertUserStr = "INSERT INTO USERS(USER_ID, USER_ROLE, EMAIL, PASSWORD) VALUES (?, 'STUDENT', ?, ?)";
+        String insertStudentStr = "INSERT INTO STUDENT(STU_ID, USER_ID, FNAME, LNAME, EMAIL) VALUES (?, ?, ?, ?, ?)";
+        
+        int lastUserNum = 0;
+        int lastStudentNum = 0;
+
+        try (PreparedStatement psUser = derbyConn.prepareStatement(selectUsers);
+             ResultSet rsUser = psUser.executeQuery()) {
             
-            int lastUser = 0;
-            while(rs.next()){
-                String currentUser = rs.getString("USER_ID");  
+            while (rsUser.next()) {
+                String currentUser = rsUser.getString("USER_ID");  
                 if (currentUser != null && currentUser.startsWith("USR") && currentUser.length() > 3) {
-                try {
-                    String numericPart = currentUser.substring(3);
-                    int currentId = Integer.parseInt(numericPart);
-                    if (currentId > lastUser) {
-                        lastUser = currentId;
+                    try {
+                        int currentId = Integer.parseInt(currentUser.substring(3));
+                        if (currentId > lastUserNum) {
+                            lastUserNum = currentId;
+                        }
+                    } catch (NumberFormatException e) {
                     }
-                } catch (NumberFormatException e) {
-                    throw new exception.UserException();
                 }
             }
-            int nextId = lastUser + 1;
-            String usrID = String.format("USR%06d", nextId);
-            try (PreparedStatement ps2 = conn.prepareStatement(insertStr)){
-                ps.setString(1, usrID);
-                ps.setString(2, email);
-                ps.setString(3, password);
-                
-                int rowsAffected = ps.executeUpdate();
-                if(rowsAffected>0){
-                    success = true;
+        } catch (SQLException err) {
+            err.printStackTrace();
+            return false;
+        }
+        
+        try (PreparedStatement psStu = mysqlConn.prepareStatement(selectStudents);
+             ResultSet rsStu = psStu.executeQuery()) {
+            
+            while (rsStu.next()) {
+                String currentStu = rsStu.getString("STU_ID");  
+                if (currentStu != null && currentStu.startsWith("STU") && currentStu.length() > 3) {
+                    try {
+                        int currentId = Integer.parseInt(currentStu.substring(3));
+                        if (currentId > lastStudentNum) {
+                            lastStudentNum = currentId;
+                        }
+                    } catch (NumberFormatException e) {
+                    }
                 }
-                s.setAttribute("email", email);
-                s.setAttribute("USER_ID", usrID);
-                ps.close();
-            }catch(SQLException err){
-                err.printStackTrace();;
-            }        
             }
-        }catch(SQLException err){
-            err.printStackTrace();;
-        }       
-        return success;
+        } catch (SQLException err) {
+            err.printStackTrace();
+            return false;
+        }
+        
+        String usrID = String.format("USR%06d", (lastUserNum + 1));
+        String stuID = String.format("STU%06d", (lastStudentNum + 1));
+
+        try {
+            derbyConn.setAutoCommit(false);
+            mysqlConn.setAutoCommit(false);
+
+            try (PreparedStatement psDerbyUser = derbyConn.prepareStatement(insertUserStr)) {
+                psDerbyUser.setString(1, usrID);
+                psDerbyUser.setString(2, email);
+                psDerbyUser.setString(3, password);
+                psDerbyUser.executeUpdate();
+            }
+
+            try (PreparedStatement psMysqlUser = mysqlConn.prepareStatement(insertUserStr)) {
+                psMysqlUser.setString(1, usrID);
+                psMysqlUser.setString(2, email);
+                psMysqlUser.setString(3, password);
+                psMysqlUser.executeUpdate();
+            }
+
+            try (PreparedStatement psMysqlStudent = mysqlConn.prepareStatement(insertStudentStr)) {
+                psMysqlStudent.setString(1, stuID);
+                psMysqlStudent.setString(2, usrID);
+                psMysqlStudent.setString(3, "");
+                psMysqlStudent.setString(4, "");
+                psMysqlStudent.setString(5, email);
+                psMysqlStudent.executeUpdate();
+            }
+
+            derbyConn.commit();
+            mysqlConn.commit();
+
+            s.setAttribute("email", email);
+            s.setAttribute("USER_ID", usrID);
+            s.setAttribute("USER_ROLE", "STUDENT"); 
+            return true;
+
+        } catch (SQLException err) {
+            err.printStackTrace();
+            try { derbyConn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+            try { mysqlConn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+            return false;
+        } finally {
+            try { derbyConn.setAutoCommit(true); } catch (SQLException e) { e.printStackTrace(); }
+            try { mysqlConn.setAutoCommit(true); } catch (SQLException e) { e.printStackTrace(); }
+        }
     }
-    
-    public boolean checkUser(String email, String password){
+        
+    public boolean checkUserInDerby(String email) {
         boolean accExist = false;
-        try{
-            String queryStr = "SELECT USER_ID, USER_ROLE, EMAIL, PASSWORD FROM USERS WHERE EMAIL = ?";
-            PreparedStatement ps = conn.prepareStatement(queryStr);
+        String queryStr = "SELECT USER_ID FROM USERS WHERE EMAIL = ?";
+        try (PreparedStatement ps = derbyConn.prepareStatement(queryStr)) {
             ps.setString(1, email);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()){
-                accExist = true;
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    accExist = true;
+                }
             }
-            rs.close();
-            ps.close();
-        }catch(SQLException err){
+        } catch (SQLException err) {
             err.printStackTrace();
         }
         return accExist;   
     }
     
-    private boolean verifyCaptcha(String gRecaptchaResponse) throws
-        IOException {
-            ServletConfig config = getServletConfig();
-            final String SECRET_KEY = (String)config.getInitParameter("CaptchaSecretKey");
-            System.out.println("LOADED KEY: " + SECRET_KEY);
-            String url = "https://www.google.com/recaptcha/api/siteverify";
-            String params = "secret=" + SECRET_KEY + "&response=" + 
-            gRecaptchaResponse;
-            HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
-            con.setRequestMethod("POST");
-            con.setDoOutput(true);
-            try {
-                OutputStream os = con.getOutputStream();
-                os.write(params.getBytes());
-            }catch(IOException e){
-                e.printStackTrace();
-            }
-            BufferedReader in = new BufferedReader(new
-            InputStreamReader(con.getInputStream()));
-            StringBuilder response = new StringBuilder();
+    private boolean verifyCaptcha(String gRecaptchaResponse) throws IOException {
+        ServletConfig config = getServletConfig();
+        final String SECRET_KEY = config.getInitParameter("CaptchaSecretKey");
+        String url = "https://www.google.com/recaptcha/api/siteverify";
+        String params = "secret=" + SECRET_KEY + "&response=" + gRecaptchaResponse;
+        
+        HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
+        con.setRequestMethod("POST");
+        con.setDoOutput(true);
+        
+        try (OutputStream os = con.getOutputStream()) {
+            os.write(params.getBytes());
+        }
+        
+        StringBuilder responseStr = new StringBuilder();
+        try (BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()))) {
             String inputLine;
             while ((inputLine = in.readLine()) != null) {
-                response.append(inputLine);
+                responseStr.append(inputLine);
             }
-            in.close();
-            JSONObject jsonResponse = new JSONObject(response.toString());
-            return jsonResponse.getBoolean("success");
         }
-    @Override
-    public String getServletInfo() {
-        return "Short description";
-    }// </editor-fold>
+        
+        JSONObject jsonResponse = new JSONObject(responseStr.toString());
+        return jsonResponse.getBoolean("success");
+    }
 
+    @Override
+    public void destroy() {
+        try {
+            if (derbyConn != null && !derbyConn.isClosed()) derbyConn.close();
+            if (mysqlConn != null && !mysqlConn.isClosed()) mysqlConn.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }
