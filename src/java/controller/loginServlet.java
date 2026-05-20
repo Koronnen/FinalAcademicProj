@@ -86,9 +86,19 @@ public class LoginServlet extends HttpServlet {
             int userType = checkUser(email, pass);
 
             // 2. Handle SUCCESS first
-            if (userType == 1 || userType == 2) {
+            if (userType == 1 || userType == 2 || userType == 3) {
+                String id = getID(email);
                 s.setAttribute("email", email);
-                s.setAttribute("role", (userType == 1) ? "GUEST" : "ADMIN");
+                s.setAttribute("USER_ID", id);
+                if (userType == 1){
+                    response.sendRedirect("AdminDashboard.jsp");
+                }
+                else if(userType == 2){
+                    response.sendRedirect("StudentDashboard.jsp");
+                }
+                else if(userType == 3){
+                    response.sendRedirect("InstructorDashboard.jsp");
+                }
 
                 response.sendRedirect("success.jsp");
                 return; // EXIT the method so no exceptions are thrown
@@ -102,35 +112,24 @@ public class LoginServlet extends HttpServlet {
             response.sendRedirect("index.jsp");
         }
     }
-    public boolean checkEmail(String email){
-        boolean validEmail = false;
-        try{
-            String queryStr = "SELECT Email, Password, UserRole FROM USERS WHERE Email = ?";
-            PreparedStatement ps = conn.prepareStatement(queryStr);
-            ps.setString(1, email);
-            ResultSet rs = ps.executeQuery();
-
-            if (rs.next()){
-                validEmail = true;
-            }
-            rs.close();
-            ps.close();
-        }catch(SQLException err){
-            err.printStackTrace();
-        }
-        return validEmail;   
-    }
     
     public int checkUser(String email, String password){
         try{
-            String queryStr = "SELECT Email, Password, UserRole FROM USERS WHERE Email = ? AND Password = ?";
+            String queryStr = "SELECT USER_ID, USER_ROLE, EMAIL, PASSWORD FROM USERS WHERE EMAIL = ? AND PASSWORD = ?";
             PreparedStatement ps = conn.prepareStatement(queryStr);
             ps.setString(1, email);
             ps.setString(2, password);
             ResultSet rs = ps.executeQuery();
+            int role = 0;
 
             if (rs.next()){
-                int role = rs.getString("UserRole").equals("GUEST") ? 1 : 2;
+                String uRole = rs.getString("USER_ROLE");
+                if (uRole.equals("ADMIN"))
+                    role = 1;
+                else if (uRole.equals("STUDENT"))
+                    role = 2;
+                else if (uRole.equals("INSTRUCTOR"))
+                    role = 3;
                 return role;
             }
             rs.close();
@@ -168,6 +167,22 @@ public class LoginServlet extends HttpServlet {
             JSONObject jsonResponse = new JSONObject(response.toString());
             return jsonResponse.getBoolean("success");
         }
+    private String getID(String email){
+        String id = "";
+        try{
+            String queryStr = "SELECT USER_ID FROM USERS WHERE EMAIL = ?";
+            PreparedStatement ps = conn.prepareStatement(queryStr);
+            ps.setString(1, email);
+            ResultSet rs = ps.executeQuery();
+            
+            if (rs.next()){
+                id = rs.getString("USER_ID");
+            }
+            rs.close();
+            ps.close();
+        }catch (SQLException sqle){sqle.printStackTrace();}
+        return id;
+    }
     @Override
     public String getServletInfo() {
         return "Short description";

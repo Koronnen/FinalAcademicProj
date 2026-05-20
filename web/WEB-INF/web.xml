@@ -112,7 +112,7 @@
         <servlet-class>controller.LoginServlet</servlet-class>
         <init-param>
             <param-name>SecretKey</param-name>
-            <param-value>pimentel67tomale</param-value>
+            <param-value>marychildacademy</param-value>
         </init-param>
         <init-param>
             <param-name>CaptchaSecretKey</param-name>
