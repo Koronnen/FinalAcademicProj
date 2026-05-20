@@ -16,6 +16,18 @@
                 <p>Please enter your details to sign in</p>
             </div>
             
+            <% 
+                String loginError = (String) session.getAttribute("loginError");
+                if (loginError != null) { 
+            %>
+                <div class="error-message">
+                    <%= loginError %>
+                </div>
+            <% 
+                    session.removeAttribute("loginError"); 
+                } 
+            %>
+            
             <form id="loginForm" onsubmit="handleLogin(event)" action="${pageContext.request.contextPath}/loginServlet" method="POST">
                 <div class="input-group">
                     <input type="email" id="email" required placeholder=" " name="email">

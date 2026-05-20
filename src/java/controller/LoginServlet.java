@@ -19,6 +19,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.*;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -71,21 +72,21 @@ public class LoginServlet extends HttpServlet {
         String gRecaptchaResponse = request.getParameter("g-recaptcha-response");
         
         if (gRecaptchaResponse == null || gRecaptchaResponse.isEmpty()) {
-            s.setAttribute("loginError", "Please complete the CAPTCHA.");
+            s.setAttribute("captchaResult", false);
             System.out.println("Invalid captcha");
-            response.sendRedirect("index.jsp"); 
-            return; 
+            response.sendRedirect("index.jsp"); //go back
+            return; //Get out
         }
-        
         boolean isValid = verifyCaptcha(gRecaptchaResponse);
-        if (isValid){ 
+        if (isValid){ //Valid Captcha, proceed with login check!
+            // 1. Get the user type (This already checks email AND password in your DB)
             String email = request.getParameter("email").trim();
             String rawPass = request.getParameter("password").trim();
             String pass = Security.encrypt(rawPass, context);
             System.out.println("Encrypted pass: " + pass);
             int userType = checkUser(email, pass);
 
-            // Handle SUCCESS
+            // 2. Handle SUCCESS first
             if (userType == 1 || userType == 2 || userType == 3) {
                 String id = getID(email);
                 s.setAttribute("email", email);
@@ -99,16 +100,15 @@ public class LoginServlet extends HttpServlet {
                 else if(userType == 3){
                     response.sendRedirect("InstructorDashboard.jsp");
                 }
-                return; 
-            } else {
-                // ADDED: Handle INVALID CREDENTIALS
-                s.setAttribute("loginError", "Invalid email or password.");
-                response.sendRedirect("index.jsp");
-                return;
+
+                response.sendRedirect("success.jsp");
+                return; // EXIT the method so no exceptions are thrown
             }
-        } else {
-            // ADDED: Set error message for bad captcha
-            s.setAttribute("loginError", "CAPTCHA verification failed. Please try again.");
+
+            // Default error for everything else
+            throw new exception.AuthenticationException("Wrong Username and Password.");
+        } else{
+            s.setAttribute("captchaResult", false);
             System.out.println("Bad Captcha");
             response.sendRedirect("index.jsp");
         }

@@ -27,7 +27,7 @@
     
     <context-param>
         <param-name>mysql.databaseName</param-name>
-        <param-value>mysql</param-value>
+        <param-value>activelearning</param-value>
     </context-param>
     <context-param>
         <param-name>mysql.jdbcClassName</param-name>
@@ -35,11 +35,11 @@
     </context-param>
     <context-param>
         <param-name>mysql.dbUserName</param-name>
-        <param-value>root</param-value>
+        <param-value>group7</param-value>
     </context-param>
     <context-param>
         <param-name>mysql.dbPassword</param-name>
-        <param-value>VinzJairus8461`</param-value>
+        <param-value>jamesbrian7*</param-value>
     </context-param>
     <context-param>
         <param-name>mysql.jdbcDriverURL</param-name>
@@ -57,7 +57,7 @@
         <param-name>mysql.connectionProperties</param-name>
         <param-value>?zeroDateTimeBehavior=CONVERT_TO_NULL</param-value>
     </context-param>
-
+    
     <context-param>
         <param-name>postgres.databaseName</param-name>
         <param-value>postgres</param-value>
@@ -90,7 +90,6 @@
         <param-name>postgres.connectionProperties</param-name>
         <param-value/>
     </context-param>
-    
     <context-param>
         <param-name>SecurityKey</param-name>
         <param-value>pimenteltomale67</param-value>

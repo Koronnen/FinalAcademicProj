@@ -7,9 +7,9 @@ import java.sql.SQLException;
 public class testConnection {
 
     // MySQL Configuration
-    private static final String MYSQL_URL = "jdbc:mysql://localhost:3310/mysql?zeroDateTimeBehavior=CONVERT_TO_NULL";
-    private static final String MYSQL_USER = "root";
-    private static final String MYSQL_PASSWORD = "VinzJairus8461`";
+    private static final String MYSQL_URL = "jdbc:mysql://localhost:3310/activelearning";
+    private static final String MYSQL_USER = "group7";
+    private static final String MYSQL_PASSWORD = "jamesbrian7*";
 
     // PostgreSQL Configuration
     private static final String POSTGRES_URL = "jdbc:postgresql://localhost:5432/postgres";
