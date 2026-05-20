@@ -91,7 +91,7 @@ public class LoginServlet extends HttpServlet {
                 s.setAttribute("email", email);
                 s.setAttribute("USER_ID", id);
                 if (userType == 1){
-                    response.sendRedirect("AdminDashboard.jsp");
+                    response.sendRedirect(request.getContextPath() + "/AdminDashboardServlet");
                 }
                 else if(userType == 2){
                     response.sendRedirect("StudentDashboard.jsp");

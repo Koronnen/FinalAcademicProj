@@ -46,6 +46,7 @@
                     <file>${file.reference.json-20251224.jar-1}</file>
                     <path-in-war>WEB-INF/lib</path-in-war>
                 </library>
+<<<<<<< HEAD
                 <library dirs="200">
                     <file>${file.reference.postgresql-42.7.11.jar-1}</file>
                     <path-in-war>WEB-INF/lib</path-in-war>
@@ -54,6 +55,8 @@
                     <file>${file.reference.mysql-connector-j-9.7.0.jar-1}</file>
                     <path-in-war>WEB-INF/lib</path-in-war>
                 </library>
+=======
+>>>>>>> 4362084024fc17274e411fcb644f47ea796f296c
             </web-module-libraries>
             <web-module-additional-libraries/>
             <source-roots>
