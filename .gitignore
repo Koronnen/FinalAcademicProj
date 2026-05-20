@@ -1,3 +1,4 @@
 drivers/
 /build/
 /dist/
+nbproject/private/

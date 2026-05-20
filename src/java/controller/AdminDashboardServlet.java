@@ -13,8 +13,25 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 public class AdminDashboardServlet extends HttpServlet {
+    
+    private boolean isAuthorizedAdmin(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return false;
+        }
+
+        // Retrieve the role object from the session
+        Object roleObj = session.getAttribute("role");
+        if (roleObj instanceof Integer) {
+            int userType = (Integer) roleObj;
+            return userType == 1; // True if they are an Admin
+        }
+
+        return false;
+    }
     
     private Connection getDerbyConnection() throws SQLException, ClassNotFoundException {
         String driver = getServletContext().getInitParameter("derby.jdbcClassName");
@@ -87,6 +104,16 @@ public class AdminDashboardServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // Session Role Verification Check
+        if (!isAuthorizedAdmin(request)) {
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                session.setAttribute("loginError", "Unauthorized access. Administrator privileges required.");
+            }
+            response.sendRedirect(request.getContextPath() + "/index.jsp");
+            return; // Terminate execution immediately to stop rendering unauthorized content
+        }
+        
         List<Map<String, String>> instructors = new ArrayList<>();
         List<Map<String, String>> students = new ArrayList<>();
         List<Map<String, String>> courses = new ArrayList<>();
@@ -136,9 +163,9 @@ public class AdminDashboardServlet extends HttpServlet {
             }
 
             // 4. Fetch Active Course Offerings Roster for Student enrollment Dropdowns
-            String schedOptionsSql = "SELECT s.SCHED_ID, ic.INST_C_ID, c.COURSE_NAME, i.LNAME, s.DAY_OF_WEEK, s.TIME_START " +
-                                     "FROM SCHEDULE s JOIN INSTRUCTORS_COURSE ic ON s.INST_C_ID = ic.INST_C_ID " +
-                                     "JOIN COURSE c ON ic.COURSE_ID = c.COURSE_ID JOIN INSTRUCTOR i ON ic.INST_ID = i.INST_ID";
+            String schedOptionsSql = "SELECT s.SCHED_ID, ic.INST_C_ID, c.COURSE_NAME, i.LNAME, s.DAY_OF_WEEK, s.TIME_START, s.TIME_END " +
+                                    "FROM SCHEDULE s JOIN INSTRUCTORS_COURSE ic ON s.INST_C_ID = ic.INST_C_ID " +
+                                    "JOIN COURSE c ON ic.COURSE_ID = c.COURSE_ID JOIN INSTRUCTOR i ON ic.INST_ID = i.INST_ID";
             try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(schedOptionsSql)) {
                 while (rs.next()) {
                     Map<String, String> row = new HashMap<>();
@@ -148,22 +175,27 @@ public class AdminDashboardServlet extends HttpServlet {
                     row.put("instructor", rs.getString("LNAME"));
                     row.put("day", rs.getString("DAY_OF_WEEK"));
                     row.put("start", rs.getString("TIME_START"));
+                    row.put("end", rs.getString("TIME_END")); // New Column Included
                     schedulesList.add(row);
                 }
             }
 
             // 5. Build Academic Timetable Matrices safely matching the actual DDL constraints
-            String calSql = "SELECT ic.INST_ID, c.COURSE_CODE, s.DAY_OF_WEEK, s.TIME_START " +
+            String calSql = "SELECT s.SCHED_ID, ic.INST_ID, ic.INST_C_ID, ic.COURSE_ID, c.COURSE_CODE, s.DAY_OF_WEEK, s.TIME_START, s.TIME_END " +
                              "FROM SCHEDULE s " +
                              "JOIN INSTRUCTORS_COURSE ic ON s.INST_C_ID = ic.INST_C_ID " +
                              "JOIN COURSE c ON ic.COURSE_ID = c.COURSE_ID";
             try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(calSql)) {
                 while (rs.next()) {
-                    String instId = rs.getString("INST_ID"); // Correctly extracts the structural faculty key
+                    String instId = rs.getString("INST_ID");
                     Map<String, String> appointment = new HashMap<>();
+                    appointment.put("schedId", rs.getString("SCHED_ID"));
+                    appointment.put("instCId", rs.getString("INST_C_ID"));
+                    appointment.put("courseId", rs.getString("COURSE_ID"));
                     appointment.put("code", rs.getString("COURSE_CODE"));
                     appointment.put("day", rs.getString("DAY_OF_WEEK"));
                     appointment.put("start", rs.getString("TIME_START"));
+                    appointment.put("end", rs.getString("TIME_END")); // New Column Included
                     instructorCalendars.computeIfAbsent(instId, k -> new ArrayList<>()).add(appointment);
                 }
             }
@@ -197,8 +229,19 @@ public class AdminDashboardServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // Session Role Verification
+        if (!isAuthorizedAdmin(request)) {
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                session.setAttribute("loginError", "Unauthorized write action. Administrator privileges required.");
+            }
+            response.sendRedirect(request.getContextPath() + "/index.jsp");
+            return; // Terminate immediately to discard the submission parameters
+        }
+
         String action = request.getParameter("action");
-        String authorId = "USR000001"; 
+        // pull actual user ID from the confirmed session parameters rather than relying on a hardcoded string
+        String authorId = (String) request.getSession().getAttribute("USER_ID"); 
 
         try (Connection conn = getMySQLConnection()) {
             conn.setAutoCommit(true);
@@ -326,41 +369,110 @@ public class AdminDashboardServlet extends HttpServlet {
                     conn.setAutoCommit(false);
                     String courseId = request.getParameter("courseId");
                     String instId = request.getParameter("instId");
-                    String instCId = "";
+                    String dayOfWeek = request.getParameter("dayOfWeek").toUpperCase(); // Must be Uppercase to match ENUM
+                    String timeStart = request.getParameter("timeStart");
+                    String timeEnd = request.getParameter("timeEnd");
 
-                    String checkSql = "SELECT INST_C_ID FROM INSTRUCTORS_COURSE WHERE COURSE_ID = ? AND INST_ID = ? LIMIT 1";
-                    try (PreparedStatement ps = conn.prepareStatement(checkSql)) {
-                        ps.setString(1, courseId);
-                        ps.setString(2, instId);
-                        ResultSet rs = ps.executeQuery();
-                        if (rs.next()) {
-                            instCId = rs.getString("INST_C_ID");
+                    // 1. Check or create the association link in INSTRUCTORS_COURSE
+                    String checkInstC = "SELECT INST_C_ID FROM INSTRUCTORS_COURSE WHERE INST_ID = ? AND COURSE_ID = ?";
+                    String instCId = null;
+                    try (PreparedStatement ps = conn.prepareStatement(checkInstC)) {
+                        ps.setString(1, instId);
+                        ps.setString(2, courseId);
+                        try (ResultSet rs = ps.executeQuery()) {
+                            if (rs.next()) {
+                                instCId = rs.getString("INST_C_ID");
+                            }
                         }
                     }
-                    if (instCId.isEmpty()) {
-                        instCId = generateNextCustomID(conn, "INSTRUCTORS_COURSE", "INST_C_ID", "ITC");
-                        String icSql = "INSERT INTO INSTRUCTORS_COURSE (INST_C_ID, COURSE_ID, INST_ID) VALUES (?, ?, ?)";
-                        try (PreparedStatement ps = conn.prepareStatement(icSql)) {
+
+                    if (instCId == null) {
+                        instCId = generateNextCustomID(conn, "INSTRUCTORS_COURSE", "INST_C_ID", "ISC");
+                        String insertInstC = "INSERT INTO INSTRUCTORS_COURSE (INST_C_ID, INST_ID, COURSE_ID) VALUES (?, ?, ?)";
+                        try (PreparedStatement ps = conn.prepareStatement(insertInstC)) {
                             ps.setString(1, instCId);
-                            ps.setString(2, courseId);
-                            ps.setString(3, instId);
+                            ps.setString(2, instId);
+                            ps.setString(3, courseId);
                             ps.executeUpdate();
                         }
                     }
 
-                    String nextSchedId = generateNextCustomID(conn, "SCHEDULE", "SCHED_ID", "SCD");
-
-                    // FIX: Change INST_ID to INST_C_ID to match your doGet query expectations!
-                    String sSql = "INSERT INTO SCHEDULE (SCHED_ID, INST_C_ID, DAY_OF_WEEK, TIME_START) VALUES (?, ?, ?, ?)";
-                    try (PreparedStatement ps = conn.prepareStatement(sSql)) {
+                    // 2. Insert into SCHEDULE table matching your new 5-column scheme
+                    String nextSchedId = generateNextCustomID(conn, "SCHEDULE", "SCHED_ID", "SCH");
+                    String insertSched = "INSERT INTO SCHEDULE (SCHED_ID, INST_C_ID, DAY_OF_WEEK, TIME_START, TIME_END) VALUES (?, ?, ?, ?, ?)";
+                    try (PreparedStatement ps = conn.prepareStatement(insertSched)) {
                         ps.setString(1, nextSchedId);
-                        ps.setString(2, instCId); // <--- Pass the generated/found instCId token here
-                        ps.setString(3, request.getParameter("dayOfWeek").toUpperCase()); 
-                        ps.setString(4, request.getParameter("timeStart"));
+                        ps.setString(2, instCId);
+                        ps.setString(3, dayOfWeek);
+                        ps.setString(4, timeStart);
+                        ps.setString(5, timeEnd);
                         ps.executeUpdate();
                     }
+
                     conn.commit();
-                    logAction("Assigned Instructor ID " + instId + " to Time Slot SCD Identifier: " + nextSchedId, authorId);
+                    logAction("Assigned course schedule assignment: " + nextSchedId + " (" + timeStart + "-" + timeEnd + ")", authorId);
+                    break;
+                }
+
+                case "editInstructorSchedule": {
+                    conn.setAutoCommit(false);
+                    String schedId = request.getParameter("schedId");
+                    String courseId = request.getParameter("courseId");
+                    String instId = request.getParameter("instId");
+                    String dayOfWeek = request.getParameter("dayOfWeek").toUpperCase();
+                    String timeStart = request.getParameter("timeStart");
+                    String timeEnd = request.getParameter("timeEnd");
+
+                    // Ensure the instructor-course relation is matched/allocated
+                    String checkInstC = "SELECT INST_C_ID FROM INSTRUCTORS_COURSE WHERE INST_ID = ? AND COURSE_ID = ?";
+                    String instCId = null;
+                    try (PreparedStatement ps = conn.prepareStatement(checkInstC)) {
+                        ps.setString(1, instId);
+                        ps.setString(2, courseId);
+                        try (ResultSet rs = ps.executeQuery()) {
+                            if (rs.next()) {
+                                instCId = rs.getString("INST_C_ID");
+                            }
+                        }
+                    }
+
+                    if (instCId == null) {
+                        instCId = generateNextCustomID(conn, "INSTRUCTORS_COURSE", "INST_C_ID", "ISC");
+                        String insertInstC = "INSERT INTO INSTRUCTORS_COURSE (INST_C_ID, INST_ID, COURSE_ID) VALUES (?, ?, ?)";
+                        try (PreparedStatement ps = conn.prepareStatement(insertInstC)) {
+                            ps.setString(1, instCId);
+                            ps.setString(2, instId);
+                            ps.setString(3, courseId);
+                            ps.executeUpdate();
+                        }
+                    }
+
+                    // Update the schedule matrix entry
+                    String updateSched = "UPDATE SCHEDULE SET INST_C_ID = ?, DAY_OF_WEEK = ?, TIME_START = ?, TIME_END = ? WHERE SCHED_ID = ?";
+                    try (PreparedStatement ps = conn.prepareStatement(updateSched)) {
+                        ps.setString(1, instCId);
+                        ps.setString(2, dayOfWeek);
+                        ps.setString(3, timeStart);
+                        ps.setString(4, timeEnd);
+                        ps.setString(5, schedId);
+                        ps.executeUpdate();
+                    }
+
+                    conn.commit();
+                    logAction("Modified timetable configuration node: " + schedId, authorId);
+                    break;
+                }
+
+                case "deleteInstructorSchedule": {
+                    conn.setAutoCommit(true);
+                    String schedId = request.getParameter("schedId");
+
+                    String deleteSql = "DELETE FROM SCHEDULE WHERE SCHED_ID = ?";
+                    try (PreparedStatement ps = conn.prepareStatement(deleteSql)) {
+                        ps.setString(1, schedId);
+                        ps.executeUpdate();
+                    }
+                    logAction("Purged instructor timeline block assignment: " + schedId, authorId);
                     break;
                 }
                 case "addStudent": {

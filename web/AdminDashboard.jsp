@@ -1,5 +1,22 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.util.*" %>
+<%
+    // 1. Get the current active session state
+    HttpSession activeSession = request.getSession(false);
+    
+    // 2. Fetch the integer role status safely
+    Object roleObj = (activeSession != null) ? activeSession.getAttribute("role") : null;
+    int userType = (roleObj instanceof Integer) ? (Integer) roleObj : -1;
+
+    // 3. Kick them out to index.jsp if they are not userType 1 (Admin)
+    if (userType != 1) {
+        if (activeSession != null) {
+            activeSession.setAttribute("loginError", "Unauthorized access. Administrator privileges required.");
+        }
+        response.sendRedirect(request.getContextPath() + "/index.jsp");
+        return; // Terminates page rendering immediately
+    }
+%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -128,6 +145,11 @@
             <div class="sidebar-menu-item" id="link-courses" onclick="switchDashboardTab('panel-courses')">
                 <i class="fa-solid fa-book-bookmark"></i>Curriculum Courses
             </div>
+            <hr class="text-white-50 my-2">
+
+            <a href="${pageContext.request.contextPath}/LogOutServlet" class="sidebar-menu-item text-decoration-none d-block text-danger border-0 bg-transparent mt-2">
+                <i class="fa-solid fa-right-from-bracket me-3 text-danger"></i>Sign Out Session
+            </a>
         </div>
     </div>
 
@@ -393,12 +415,14 @@
 
     <div class="modal fade" id="modalAssignSchedule" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <form class="modal-content" action="${pageContext.request.contextPath}/AdminDashboardServlet" method="POST">
-                <input type="hidden" name="action" value="assignInstructorSchedule">
+            <form class="modal-content" id="modalAssignScheduleForm" action="${pageContext.request.contextPath}/AdminDashboardServlet" method="POST">
+                <input type="hidden" name="action" id="scheduleActionField" value="assignInstructorSchedule">
+                <input type="hidden" name="schedId" id="scheduleIdField" value="">
                 <input type="hidden" name="instId" id="scheduleInstId">
+
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-calendar-plus me-2"></i>Configure Course Schedule Node</h5>
-                    <button type="close" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title fw-bold" id="scheduleModalHeaderTitle"><i class="fa-solid fa-calendar-plus me-2"></i>Configure Course Schedule Node</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
                     <div class="mb-3">
@@ -418,14 +442,24 @@
                             <option value="Thursday">Thursday Matrix</option>
                             <option value="Friday">Friday Matrix</option>
                             <option value="Saturday">Saturday Matrix</option>
+                            <option value="Sunday">Sunday Matrix</option>
                         </select>
                     </div>
                     <div class="row g-3">
-                        <div class="col-6"><label class="form-label small fw-bold">Execution Start</label><input type="time" name="timeStart" class="form-control form-control-sm" required></div>
-                        <div class="col-6"><label class="form-label small fw-bold">Execution Limit Termination</label><input type="time" name="timeEnd" class="form-control form-control-sm" required></div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Execution Start</label>
+                            <input type="time" name="timeStart" class="form-control form-control-sm" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Execution Limit Termination (End)</label>
+                            <input type="time" name="timeEnd" class="form-control form-control-sm" required>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer bg-light"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary btn-sm">Commit Sched Offering</button></div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Commit Sched Offering</button>
+                </div>
             </form>
         </div>
     </div>
@@ -577,18 +611,133 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Global Map containing Calendar representations processed from servlet parsing parameters
+        // Global maps passed down securely from the request engine context scope
         const calendarMap = {
-            <% if (instructorCalendars != null) {
-                for (Map.Entry<String, List<Map<String, String>>> entry : instructorCalendars.entrySet()) { %>
+            <% if(instructorCalendars != null) {
+                for(Map.Entry<String, List<Map<String, String>>> entry : instructorCalendars.entrySet()) { %>
                     "<%= entry.getKey() %>": [
-                        <% for (Map<String, String> appt : entry.getValue()) { %>
-                            { code: "<%= appt.get("code") %>", day: "<%= appt.get("day") %>", start: "<%= appt.get("start") %>", end: "<%= appt.get("end") %>" },
+                        <% for(Map<String, String> appt : entry.getValue()) { %>
+                            {
+                                schedId: "<%= appt.get("schedId") %>",
+                                instCId: "<%= appt.get("instCId") %>",
+                                courseId: "<%= appt.get("courseId") %>",
+                                code: "<%= appt.get("code") %>",
+                                day: "<%= appt.get("day") %>",
+                                start: "<%= appt.get("start") %>",
+                                end: "<%= appt.get("end") %>"
+                            },
                         <% } %>
                     ],
             <% } } %>
         };
+
+        function openScheduleModal(instId) {
+            document.getElementById('scheduleInstId').value = instId;
+            // Reset modal behavior to default assignment route
+            document.getElementById('modalAssignScheduleForm').action = "${pageContext.request.contextPath}/AdminDashboardServlet";
+            document.getElementById('scheduleActionField').value = "assignInstructorSchedule";
+            document.getElementById('scheduleIdField').value = "";
+            document.getElementById('scheduleModalHeaderTitle').innerText = "Configure Course Schedule Node";
+
+            new bootstrap.Modal(document.getElementById('modalAssignSchedule')).show();
+        }
+
+        function openCalendarModal(instId, lastName) {
+            document.getElementById('calendarModalInstructorLabel').innerText = "Professor " + lastName;
+
+            const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+            days.forEach(d => {
+                const cell = document.getElementById('cal-day-' + d.charAt(0) + d.slice(1).toLowerCase());
+                if (cell) cell.innerHTML = '<span class="text-muted small"><em>Vacant Matrix Node</em></span>';
+            });
+
+            if (calendarMap[instId]) {
+                calendarMap[instId].forEach(appt => {
+                    const dayFormatted = appt.day.charAt(0) + appt.day.slice(1).toLowerCase();
+                    const cell = document.getElementById('cal-day-' + dayFormatted);
+                    if (cell) {
+                        // Formatting times for aesthetic display parameters
+                        const cleanStart = appt.start.substring(0, 5);
+                        const cleanEnd = appt.end ? appt.end.substring(0, 5) : '??:??';
+
+                        // NEAT & FIXED UI: Clean vertical card separation with action buttons grouped at the bottom
+                        const cardHtml = `
+                            <div class="card shadow-sm border-0 mb-3 text-start overflow-hidden" style="border-left: 4px solid #3b82f6 !important;">
+                                <div class="card-body p-2 bg-white">
+                                    <div class="text-dark fw-bold mb-1" style="font-size: 13px;">\${appt.code}</div>
+                                    <div class="text-muted mb-2" style="font-size: 11px;">
+                                        <i class="fa-regular fa-clock me-1"></i>\${cleanStart} - \${cleanEnd}
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center pt-2 border-top" style="font-size: 11px;">
+                                        <a href="#" class="text-warning text-decoration-none fw-semibold" 
+                                           onclick="populateEditSchedule('\${instId}', '\${appt.schedId}', '\${appt.courseId}', '\${appt.day}', '\${appt.start}', '\${appt.end}')">
+                                            <i class="fa-solid fa-pen me-1"></i>Edit
+                                        </a>
+                                        <a href="#" class="text-danger text-decoration-none fw-semibold" 
+                                           onclick="triggerDeleteSchedule('\${appt.schedId}')">
+                                            <i class="fa-solid fa-trash me-1"></i>Delete
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>`;
+
+                        if (cell.innerHTML.includes('Vacant Matrix Node')) {
+                            cell.innerHTML = cardHtml;
+                        } else {
+                            cell.innerHTML += cardHtml;
+                        }
+                    }
+                });
+            }
+            new bootstrap.Modal(document.getElementById('modalViewCalendar')).show();
+        }
+
+        function populateEditSchedule(instId, schedId, courseId, day, start, end) {
+            // Close calendar overlay modal view context
+            bootstrap.Modal.getInstance(document.getElementById('modalViewCalendar')).hide();
+
+            document.getElementById('scheduleInstId').value = instId;
+            document.getElementById('scheduleIdField').value = schedId;
+            document.getElementById('scheduleActionField').value = "editInstructorSchedule";
+            document.getElementById('scheduleModalHeaderTitle').innerText = "Modify Timetable Matrix Slot";
+
+            const form = document.getElementById('modalAssignScheduleForm');
+            form.querySelector('select[name="courseId"]').value = courseId;
+
+            // Ensure capitalization format alignment matches the option element nodes
+            const normalizedDay = day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
+            form.querySelector('select[name="dayOfWeek"]').value = normalizedDay;
+
+            form.querySelector('input[name="timeStart"]').value = start.substring(0, 5);
+            form.querySelector('input[name="timeEnd"]').value = end.substring(0, 5);
+
+            new bootstrap.Modal(document.getElementById('modalAssignSchedule')).show();
+        }
+
+        function triggerDeleteSchedule(schedId) {
+            if (confirm("Are you sure you want to completely drop this timeframe schedule profile unit entry?")) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '${pageContext.request.contextPath}/AdminDashboardServlet';
+
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                actionInput.value = 'deleteInstructorSchedule';
+
+                const idInput = document.createElement('input');
+                idInput.type = 'hidden';
+                idInput.name = 'schedId';
+                idInput.value = schedId;
+
+                form.appendChild(actionInput);
+                form.appendChild(idInput);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
 
         function switchDashboardTab(activeTabId) {
             document.querySelectorAll('.tab-panel-view').forEach(p => p.classList.remove('active-panel'));
@@ -631,41 +780,6 @@
             document.getElementById('editCourseName').value = cName;
             document.getElementById('editCourseLength').value = cLen;
             new bootstrap.Modal(document.getElementById('modalEditCourse')).show();
-        }
-
-        function openScheduleModal(instId) {
-            document.getElementById('scheduleInstId').value = instId;
-            new bootstrap.Modal(document.getElementById('modalAssignSchedule')).show();
-        }
-
-        function openCalendarModal(instId, instructorLastName) {
-            document.getElementById('calendarModalInstructorLabel').innerText = "Prof. " + instructorLastName;
-            
-            const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
-            days.forEach(d => {
-                const cell = document.getElementById('cal-day-' + d.charAt(0) + d.slice(1).toLowerCase());
-                if (cell) cell.innerHTML = '<span class="text-muted small"><em>Vacant Matrix Node</em></span>';
-            });
-
-            if (calendarMap[instId]) {
-                calendarMap[instId].forEach(appt => {
-                    // Match capitalization schemas safely with your target ENUM criteria
-                    const dayFormatted = appt.day.charAt(0) + appt.day.slice(1).toLowerCase();
-                    const cell = document.getElementById('cal-day-' + dayFormatted);
-                    if (cell) {
-                        const cardHtml = `<div class="p-2 mb-2 bg-primary text-white rounded shadow-sm text-start small">
-                                            <strong>\${appt.code}</strong><br>
-                                            <span style="font-size:11px;"><i class="fa-regular fa-clock me-1"></i>Starts: \${appt.start}</span>
-                                          </div>`;
-                        if (cell.innerHTML.includes('Vacant Matrix Node')) {
-                            cell.innerHTML = cardHtml;
-                        } else {
-                            cell.innerHTML += cardHtml;
-                        }
-                    }
-                });
-            }
-            new bootstrap.Modal(document.getElementById('modalViewCalendar')).show();
         }
     </script>
 </body>
