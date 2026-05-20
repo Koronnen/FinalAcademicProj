@@ -18,33 +18,58 @@ import javax.servlet.http.HttpServletResponse;
 
 public class StudentServlet extends HttpServlet {
     
-    Connection conn;
+    private Connection getDerbyConnection() throws SQLException, ClassNotFoundException {
+        String driver = getServletContext().getInitParameter("derby.jdbcClassName");
+        String url = getServletContext().getInitParameter("derby.jdbcDriverURL") + "://" +
+                     getServletContext().getInitParameter("derby.dbHostName") + ":" +
+                     getServletContext().getInitParameter("derby.dbPort") + "/" +
+                     getServletContext().getInitParameter("derby.databaseName");
+        String user = getServletContext().getInitParameter("derby.dbUserName");
+        String pass = getServletContext().getInitParameter("derby.dbPassword");
 
-    public void init() throws ServletException {
-        ServletContext context = getServletContext();
-            try {	
-                    Class.forName(context.getInitParameter("derby.jdbcClassName"));
-                    System.out.println("jdbcClassName: " + context.getInitParameter("derby.jdbcClassName"));
-                    String username = context.getInitParameter("derby.dbUserName");
-                    String password = context.getInitParameter("derby.dbPassword");
-                    StringBuffer url = new StringBuffer(context.getInitParameter("derby.jdbcDriverURL"))
-                            .append("://")
-                            .append(context.getInitParameter("derby.dbHostName"))
-                            .append(":")
-                            .append(context.getInitParameter("derby.dbPort"))
-                            .append("/")
-                            .append(context.getInitParameter("mysql.databaseName"));
-                    conn = 
-                      DriverManager.getConnection(url.toString(),username,password);
-                    System.out.println("Done loading databases");
-            } catch (SQLException sqle){
-                    System.out.println("SQLException error occured - " 
-                            + sqle.getMessage());
-            } catch (ClassNotFoundException nfe){
-                    System.out.println("ClassNotFoundException error occured - " 
-                    + nfe.getMessage());
-            }
+        Class.forName(driver);
+        return DriverManager.getConnection(url, user, pass);
     }
+
+    private Connection getMySQLConnection() throws SQLException, ClassNotFoundException {
+        String driver = getServletContext().getInitParameter("mysql.jdbcClassName");
+        String url = getServletContext().getInitParameter("mysql.jdbcDriverURL") + "://" +
+                     getServletContext().getInitParameter("mysql.dbHostName") + ":" +
+                     getServletContext().getInitParameter("mysql.dbPort") + "/" +
+                     getServletContext().getInitParameter("mysql.databaseName");
+        String user = getServletContext().getInitParameter("mysql.dbUserName");
+        String pass = getServletContext().getInitParameter("mysql.dbPassword");
+        
+        Class.forName(driver);
+        return DriverManager.getConnection(url, user, pass);
+    }
+    
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+        throws ServletException, IOException {
+    response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        response.setHeader("Pragma", "no-cache");
+        response.setDateHeader("Expires", 0);
+        
+        // 2. Session and Security Guard Check
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("USER_ID") == null) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied.");
+            return;
+        }
+        
+        // 3. Role Restriction Protection
+        String userRole = (String) session.getAttribute("USER_ROLE");
+        if (!"STUDENT".equalsIgnoreCase(userRole)) {
+            response.sendRedirect("index.jsp");
+            return;
+        }
+
+        String usrID = (String) session.getAttribute("USER_ID");
+        String displayName = "Student";
+        String dbStuId = "", dbFname = "", dbLname = "", dbEmail = "";
+}
+    
     
     @Override
     public String getServletInfo() {

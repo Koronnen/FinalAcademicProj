@@ -12,30 +12,10 @@
     response.setHeader("Pragma", "no-cache");
     response.setDateHeader("Expires", 0);
     
-    if (session.getAttribute("USER_ID") == null || session == null) { 
+    if (request.getAttribute("displayName") == null) { 
         response.sendError(HttpServletResponse.SC_FORBIDDEN);
         return;
     }
-    
-    String usrID = (String) session.getAttribute("USER_ID");
-    String email = (String) session.getAttribute("email");
-    String role = (String) session.getAttribute("USER_ROLE");
-    
-    String displayName = "";
-    String dbStudentId = "";
-    String dbFirstName = "";
-    String dbLastName  = "";
-    String dbEmail = "";
-    
-    Connection conn;
-    PreparedStatement ps;
-    if ("STUDENT".equalsIgnoreCase("USER_ROLE")) {
-        ps = conn.prepareStatement("SELECT STU_ID, FNAME, LNAME, EMAIL WHERE USER_ID = ?");
-        ps.setString(1, email);
-    } else {
-        response.sendRedirect("index.jsp");
-    }
-    ResultSet rs = ps.executeQuery();
 %>
 <!DOCTYPE html>
 <html>
@@ -45,31 +25,28 @@
     </head>
     <body>
         <div class="welcome"> 
-        <h1> Welcome back to your dashboard, <%= displayName %>!</h1> 
+        <h1> Welcome back to your dashboard, <%= request.getAttribute("displayName") == null %>!</h1> 
         </div>
         <div class="profile-form">
             <h2>Edit your Profile Information</h2>
             <form action="${pageContext.request.contextPath}/StudentServlet" method="POST">
                 <div class="form-group">
                     <label>First Name:</label>
-                    <input type="text" name="fname" value="<%= dbFirstName != null ? dbFirstName : ""%>" placeholder="Enter your first name" required>
+                    <input type="text" name="fname" value="<%= request.getAttribute("fname") %>" placeholder="Enter your first name" required>
                 </div>
                 <div class="form-group">
                     <label>Last Name:</label>
-                    <input type="text" name="lname" value="<%= dbLastName != null ? dbLastName : ""%>" placeholder="Enter your first name" required>
+                    <input type="text" name="lname" value="<%= request.getAttribute("lname") %>" placeholder="Enter your first name" required>
                 </div>
                 <div class="form-group">
                     <label>Email Address:</label>
-                    <input type="text" name="fname" value="<%= dbFirstName != null ? dbFirstName : ""%>" placeholder="Enter your e" required>
+                    <input type="text" name="fname" value="<%= request.getAttribute("email") %>" placeholder="Enter your e" required>
                 </div>
+                <br>
+                <button type="submit">Save Updates</button>
             </form>
         </div>
-        
-        
-        
-        
-        
-        
+
     </body>
         
 </html>
