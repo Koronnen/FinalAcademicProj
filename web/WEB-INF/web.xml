@@ -24,7 +24,6 @@
         <param-name>derby.dbPort</param-name>
         <param-value>1527</param-value>
     </context-param>
-    
     <context-param>
         <param-name>mysql.databaseName</param-name>
         <param-value>activelearning</param-value>
@@ -57,7 +56,6 @@
         <param-name>mysql.connectionProperties</param-name>
         <param-value>?zeroDateTimeBehavior=CONVERT_TO_NULL</param-value>
     </context-param>
-    
     <context-param>
         <param-name>postgres.databaseName</param-name>
         <param-value>postgres</param-value>
@@ -118,9 +116,17 @@
             <param-value>6LfuAPIsAAAAAGuMrWw28J4yd79bJHQKpfOAf_9f</param-value>
         </init-param>
     </servlet>
+    <servlet>
+        <servlet-name>signUpServlet</servlet-name>
+        <servlet-class>controller.signUpServlet</servlet-class>
+    </servlet>
     <servlet-mapping>
         <servlet-name>loginServlet</servlet-name>
         <url-pattern>/loginServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>signUpServlet</servlet-name>
+        <url-pattern>/signUpServlet</url-pattern>
     </servlet-mapping>
     <session-config>
         <session-timeout>
@@ -135,7 +141,12 @@
         <exception-type>exception.AuthenticationException</exception-type>
         <location>/ErrorPages/error_3.jsp</location>
     </error-page>
+    <error-page>
+        <exception-type>exception.UserException</exception-type>
+        <location>/ErrorPages/</location>
+    </error-page>
     <welcome-file-list>
+        <welcome-file>signUp.jsp</welcome-file>
         <welcome-file>index.jsp</welcome-file>
     </welcome-file-list>
 </web-app>

@@ -1,59 +1,59 @@
+<%@page contentType="text/html" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Portal</title>
+    <title>Sign Up - Portal (Students)</title>
+    
     <link rel="stylesheet" href="styles/indexStyles.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Open+Sans:wght@400;500&display=swap" rel="stylesheet">
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-    </head>
+</head>
 <body>
     <div class="login-container">
         <div class="login-card">
             <div class="login-header">
-                <h2>Welcome Back</h2>
-                <p>Please enter your details to sign in</p>
-            </div>
-            
+                <h2>Welcome to Active Learning!</h2>
+                <p>Start your journey here and enroll yourselves to our courses!</p>
+            </div>            
             <% 
-                String loginError = (String) session.getAttribute("loginError");
-                if (loginError != null) { 
+                String captchaError = (String) session.getAttribute("captchaError");
+                if (captchaError != null) { 
             %>
                 <div class="error-message">
-                    <%= loginError %>
+                    <%= captchaError %>
                 </div>
             <% 
-                    session.removeAttribute("loginError"); 
+                    session.removeAttribute("captchaError"); 
                 } 
             %>
-            
-            <form id="loginForm" onsubmit="handleLogin(event)" action="${pageContext.request.contextPath}/loginServlet" method="POST">
+            <form id="signUpForm" action="${pageContext.request.contextPath}/signUpServlet" method="POST">
+                
                 <div class="input-group">
-                    <input type="email" id="email" required placeholder=" " name="email">
-                    <label for="email">Email Address</label>
+                    <input type="email" id="signEmail" required placeholder=" " name="signEmail">
+                    <label for="signEmail">Email Address</label>
                     <div class="input-line"></div>
                 </div>
 
                 <div class="input-group">
-                    <input type="password" id="password" required placeholder=" " name="password">
-                    <label for="password">Password</label>
+                    <input type="password" id="signPassword" required placeholder=" " name="signPassword">
+                    <label for="signPassword">Password</label>
                     <div class="input-line"></div>
                 </div>
-
+                
                 <div class="captcha-container">
                     <div class="g-recaptcha" data-sitekey="6LfuAPIsAAAAAGghWubdgs_wrykIdva3AOUs9NnD"></div>
                     <br/>
                 </div>
 
                 <button type="submit" class="submit-btn">
-                    <span class="btn-text">Sign In</span>
+                    <span class="btn-text">Sign Up</span>
                     <div class="btn-loader"></div>
                 </button>
             </form>
 
             <div class="login-footer">
-                <p>Don't have an account? <a href="${pageContext.request.contextPath}/signUp.jsp">Sign up</a></p>
+                <p>Already have an account? <a href="${pageContext.request.contextPath}/login.jsp">Log in</a></p>
             </div>
         </div>
     </div>

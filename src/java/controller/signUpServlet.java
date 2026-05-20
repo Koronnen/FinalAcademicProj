@@ -17,9 +17,6 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.*;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -29,8 +26,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import org.json.JSONObject;
 
-public class LoginServlet extends HttpServlet {
-    
+public class signUpServlet extends HttpServlet {
+
     Connection conn;
 
     public void init() throws ServletException {
@@ -71,75 +68,99 @@ public class LoginServlet extends HttpServlet {
         HttpSession s = request.getSession();
         String gRecaptchaResponse = request.getParameter("g-recaptcha-response");
         
+        String email = request.getParameter("signEmail");
+        String rawPass = request.getParameter("signPassword").trim();
+        
         if (gRecaptchaResponse == null || gRecaptchaResponse.isEmpty()) {
-            s.setAttribute("captchaResult", false);
+            s.setAttribute("captchaError", "Please complete the CAPTCHA.");
             System.out.println("Invalid captcha");
-            response.sendRedirect("index.jsp"); //go back
-            return; //Get out
+            response.sendRedirect("index.jsp"); 
+            return; 
         }
+        
+        if(email.trim().isEmpty() || email == null || rawPass.trim().isEmpty() || rawPass == null){
+            s.setAttribute("noInput", "Please enter your email and password.");
+            response.sendRedirect("signUp.jsp");
+            return;
+        }
+        
+        String pass = Security.encrypt(rawPass, context);
+        boolean userExist = checkUser(email, pass);
         boolean isValid = verifyCaptcha(gRecaptchaResponse);
-        if (isValid){ //Valid Captcha, proceed with login check!
-            // 1. Get the user type (This already checks email AND password in your DB)
-            String email = request.getParameter("email").trim();
-            String rawPass = request.getParameter("password").trim();
-            String pass = Security.encrypt(rawPass, context);
-            System.out.println("Encrypted pass: " + pass);
-            int userType = checkUser(email, pass);
-
-            // 2. Handle SUCCESS first
-            if (userType == 1 || userType == 2 || userType == 3) {
-                String id = getID(email);
-                s.setAttribute("email", email);
-                s.setAttribute("USER_ID", id);
-                if (userType == 1){
-                    response.sendRedirect("AdminDashboard.jsp");
+        
+        if(isValid){
+            if(!userExist){
+                boolean registerSuccess = registerStudent(email, pass);
+                if (registerSuccess) {
+                    s.setAttribute("successMessage", "Registration successful!");
+                    response.sendRedirect("index.jsp");
                 }
-                else if(userType == 2){
-                    response.sendRedirect("StudentDashboard.jsp");
-                }
-                else if(userType == 3){
-                    response.sendRedirect("InstructorDashboard.jsp");
-                }
-
-                response.sendRedirect("success.jsp");
-                return; // EXIT the method so no exceptions are thrown
             }
-
-            // Default error for everything else
-            throw new exception.AuthenticationException("Wrong Username and Password.");
-        } else{
-            s.setAttribute("captchaResult", false);
-            System.out.println("Bad Captcha");
-            response.sendRedirect("index.jsp");
         }
+        
+    }
+    public boolean registerStudent(String email, String password){
+        boolean success = false;
+        String insertStr = "INSERT INTO USERS(USER_ID, USER_ROLE, EMAIL, PASSWORD) VALUES (?, 'STUDENT', ?, ?)";
+        String selectStr = "SELECT USER_ID, USER_ROLE, EMAIL, PASSWORD FROM USERS";
+        
+        try(PreparedStatement ps = conn.prepareStatement(selectStr);
+            ResultSet rs = ps.executeQuery()){
+            
+            int lastUser = 0;
+            while(rs.next()){
+                String currentUser = rs.getString("USER_ID");  
+                if (currentUser != null && currentUser.startsWith("USR") && currentUser.length() > 3) {
+                try {
+                    String numericPart = currentUser.substring(3);
+                    int currentId = Integer.parseInt(numericPart);
+                    if (currentId > lastUser) {
+                        lastUser = currentId;
+                    }
+                } catch (NumberFormatException e) {
+                    throw new exception.UserException();
+                }
+            }
+            int nextId = lastUser + 1;
+            String usrID = String.format("USR%06d", nextId);
+            try (PreparedStatement ps2 = conn.prepareStatement(insertStr)){
+                ps.setString(1, usrID);
+                ps.setString(2, email);
+                ps.setString(3, password);
+                
+                int rowsAffected = ps.executeUpdate();
+                if(rowsAffected>0){
+                    success = true;
+                }
+                ps.close();
+            }catch(SQLException err){
+                err.printStackTrace();;
+            }        
+            }
+        }catch(SQLException err){
+            err.printStackTrace();;
+        }       
+        return success;
     }
     
-    public int checkUser(String email, String password){
+    public boolean checkUser(String email, String password){
+        boolean accExist = false;
         try{
-            String queryStr = "SELECT USER_ID, USER_ROLE, EMAIL, PASSWORD FROM USERS WHERE EMAIL = ? AND PASSWORD = ?";
+            String queryStr = "SELECT USER_ID, USER_ROLE, EMAIL, PASSWORD FROM USERS WHERE EMAIL = ?";
             PreparedStatement ps = conn.prepareStatement(queryStr);
             ps.setString(1, email);
-            ps.setString(2, password);
             ResultSet rs = ps.executeQuery();
-            int role = 0;
-
             if (rs.next()){
-                String uRole = rs.getString("USER_ROLE");
-                if (uRole.equals("ADMIN"))
-                    role = 1;
-                else if (uRole.equals("STUDENT"))
-                    role = 2;
-                else if (uRole.equals("INSTRUCTOR"))
-                    role = 3;
-                return role;
+                accExist = true;
             }
             rs.close();
             ps.close();
         }catch(SQLException err){
             err.printStackTrace();
         }
-        return 0;   
+        return accExist;   
     }
+    
     private boolean verifyCaptcha(String gRecaptchaResponse) throws
         IOException {
             ServletConfig config = getServletConfig();
@@ -168,22 +189,6 @@ public class LoginServlet extends HttpServlet {
             JSONObject jsonResponse = new JSONObject(response.toString());
             return jsonResponse.getBoolean("success");
         }
-    private String getID(String email){
-        String id = "";
-        try{
-            String queryStr = "SELECT USER_ID FROM USERS WHERE EMAIL = ?";
-            PreparedStatement ps = conn.prepareStatement(queryStr);
-            ps.setString(1, email);
-            ResultSet rs = ps.executeQuery();
-            
-            if (rs.next()){
-                id = rs.getString("USER_ID");
-            }
-            rs.close();
-            ps.close();
-        }catch (SQLException sqle){sqle.printStackTrace();}
-        return id;
-    }
     @Override
     public String getServletInfo() {
         return "Short description";
