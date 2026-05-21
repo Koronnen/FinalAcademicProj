@@ -7,10 +7,15 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.UUID;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -61,9 +66,23 @@ public class SignUpServlet extends HttpServlet {
         }
     }
 
+    private Connection getPostgresConnection() throws SQLException, ClassNotFoundException {
+        String driver = getServletContext().getInitParameter("postgres.jdbcClassName");
+        String url = getServletContext().getInitParameter("postgres.jdbcDriverURL") + "://" +
+                     getServletContext().getInitParameter("postgres.dbHostName") + ":" +
+                     getServletContext().getInitParameter("postgres.dbPort") + "/" +
+                     getServletContext().getInitParameter("postgres.databaseName");
+        String user = getServletContext().getInitParameter("postgres.dbUserName");
+        String pass = getServletContext().getInitParameter("postgres.dbPassword");
+
+        Class.forName(driver);
+        return DriverManager.getConnection(url, user, pass);
+    }
+
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        String authorId = "SYSTEM"; 
         ServletContext context = getServletContext();
         HttpSession s = request.getSession();
         
@@ -105,15 +124,22 @@ public class SignUpServlet extends HttpServlet {
 
         if (!userExist) {
             boolean registerSuccess = registerStudentDualWrite(email, pass, request);
+            
             if (registerSuccess) {
-                s.setAttribute("successMessage", "Registration successful in both systems!");
+                String STU = (String) s.getAttribute("STU_LOG");
+                String LOG = (String) s.getAttribute("USER_ID");
+                s.setAttribute("successMessage", "Registered successfully!");
+                logAction("Created User: " + LOG, authorId);
+                logAction("Created Student Profile: " + STU, authorId);
                 response.sendRedirect("index.jsp");
             } else {
                 s.setAttribute("captchaError", "Registration failed during database synchronization.");
+                logAction("FAILED REGISTRATION ATTEMPT: Sync Error for email " + email, authorId);
                 response.sendRedirect("signUp.jsp");
             }
         } else {
-            s.setAttribute("captchaError", "An account with that email already exists.");
+            s.setAttribute("loginError", "An account with that email already exists.");
+            logAction("REJECTED REGISTRATION: Duplicate email hit (" + email + ")", authorId);
             response.sendRedirect("signUp.jsp");
         }
     }
@@ -172,6 +198,8 @@ public class SignUpServlet extends HttpServlet {
         
         String usrID = String.format("USR%06d", (lastUserNum + 1));
         String stuID = String.format("STU%06d", (lastStudentNum + 1));
+        String usrLogID = usrID;
+        String stuLogID = stuID;
 
         try {
             derbyConn.setAutoCommit(false);
@@ -202,9 +230,10 @@ public class SignUpServlet extends HttpServlet {
 
             derbyConn.commit();
             mysqlConn.commit();
-
+            
             s.setAttribute("email", email);
             s.setAttribute("USER_ID", usrID);
+            s.setAttribute("STU_LOG", stuLogID);
             s.setAttribute("USER_ROLE", "STUDENT"); 
             return true;
 
@@ -220,19 +249,19 @@ public class SignUpServlet extends HttpServlet {
     }
         
     public boolean checkUserInDerby(String email) {
-        boolean accExist = false;
-        String queryStr = "SELECT USER_ID FROM USERS WHERE EMAIL = ?";
+        String queryStr = "SELECT USER_ID FROM USERS WHERE LOWER(EMAIL) = LOWER(?)";
         try (PreparedStatement ps = derbyConn.prepareStatement(queryStr)) {
-            ps.setString(1, email);
+            ps.setString(1, email.trim());
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    accExist = true;
+                    return true;
                 }
             }
         } catch (SQLException err) {
             err.printStackTrace();
+            return false;
         }
-        return accExist;   
+        return false;   
     }
     
     private boolean verifyCaptcha(String gRecaptchaResponse) throws IOException {
@@ -260,7 +289,26 @@ public class SignUpServlet extends HttpServlet {
         JSONObject jsonResponse = new JSONObject(responseStr.toString());
         return jsonResponse.getBoolean("success");
     }
-
+    
+    private void logAction(String actionMade, String authorId) {
+        String insertLogSQL = "INSERT INTO LOG (LOG_ID, ACTION_MADE, AUTHOR, LOG_DATE, LOG_TIME) VALUES (?, ?, ?, ?, ?)";
+        if (authorId == null || authorId.trim().isEmpty()) {
+            authorId = "SYSTEM";
+        }
+        try (Connection pgConn = getPostgresConnection();
+             PreparedStatement pstmt = pgConn.prepareStatement(insertLogSQL)) {
+            String logId = UUID.randomUUID().toString().substring(0, 9);
+            pstmt.setString(1, logId);
+            pstmt.setString(2, actionMade);
+            pstmt.setString(3, authorId);
+            pstmt.setDate(4, Date.valueOf(LocalDate.now()));
+            pstmt.setTime(5, Time.valueOf(LocalTime.now()));
+            pstmt.executeUpdate();
+        } catch (Exception e) {
+            System.err.println("PostgreSQL Telemetry Log Drop: " + e.getMessage());
+        }
+    }
+    
     @Override
     public void destroy() {
         try {

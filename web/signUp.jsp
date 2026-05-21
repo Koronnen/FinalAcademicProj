@@ -17,17 +17,26 @@
                 <h2>Welcome to Active Learning!</h2>
                 <p>Start your journey here and enroll yourselves to our courses!</p>
             </div>            
-            <% 
-                String captchaError = (String) session.getAttribute("captchaError");
-                if (captchaError != null) { 
-            %>
-                <div class="error-message">
-                    <%= captchaError %>
-                </div>
-            <% 
-                    session.removeAttribute("captchaError"); 
-                } 
-            %>
+            <%  String captchaError = (String) session.getAttribute("captchaError");
+                if (captchaError != null) { %>
+                <div class="error-message"> <%= captchaError %> </div>
+            <%   session.removeAttribute("captchaError");   } %>
+            
+            <%  String noInput = (String) session.getAttribute("noInput");
+                if (noInput != null) { %>
+                <div class="error-message"> <%= noInput %> </div>
+            <%   session.removeAttribute("noInput");   } %>
+            
+            <%  String incorrectPass = (String) session.getAttribute("incorrectPass");
+                if (incorrectPass != null) { %>
+                <div class="error-message"> <%= incorrectPass %> </div>
+            <%   session.removeAttribute("incorrectPass");   } %>
+            
+            <%  String loginError = (String) session.getAttribute("loginError");
+                if (loginError != null) { %>
+                <div class="error-message"> <%= loginError %> </div>
+            <%   session.removeAttribute("loginError");   } %>
+            
             <form id="signUpForm" action="${pageContext.request.contextPath}/SignUpServlet" method="POST">
                 
                 <div class="input-group">
