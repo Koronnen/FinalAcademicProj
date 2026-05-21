@@ -2,3 +2,4 @@ drivers/
 /build/
 /dist/
 nbproject/private/
+scripts/
