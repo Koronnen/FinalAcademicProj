@@ -87,17 +87,27 @@ public class LoginServlet extends HttpServlet {
 
             // Handle SUCCESS
             if (userType == 1 || userType == 2 || userType == 3) {
+                System.out.println("NAME IN DB");
                 String id = getID(email);
                 s.setAttribute("email", email);
                 s.setAttribute("USER_ID", id);
-                if (userType == 1){
-                    response.sendRedirect(request.getContextPath() + "/AdminDashboardServlet");
-                }
-                else if(userType == 2){
-                    response.sendRedirect(request.getContextPath() +"/StudentServlet");
-                }
-                else if(userType == 3){
-                    response.sendRedirect(request.getContextPath() +" ");
+                s.setAttribute("role", userType);
+                System.out.println(email);
+                System.out.println(id);
+                System.out.println(userType);
+                switch (userType) {
+                    case 1:
+                        System.out.println("reached trying to get tot admin");
+                        response.sendRedirect(request.getContextPath() + "/AdminDashboardServlet");
+                        break;
+                    case 2:
+                        response.sendRedirect(request.getContextPath() +"/StudentServlet");
+                        break;
+                    case 3:
+                        response.sendRedirect(request.getContextPath() +" ");
+                        break;
+                    default:
+                        break;
                 }
                 return; 
             } else {

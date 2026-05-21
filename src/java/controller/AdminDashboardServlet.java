@@ -18,8 +18,10 @@ import javax.servlet.http.HttpSession;
 public class AdminDashboardServlet extends HttpServlet {
     
     private boolean isAuthorizedAdmin(HttpServletRequest request) {
+        System.out.println("reached isAuthorizedAdmin");
         HttpSession session = request.getSession(false);
         if (session == null) {
+            System.out.println("session is null");
             return false;
         }
 
@@ -27,9 +29,10 @@ public class AdminDashboardServlet extends HttpServlet {
         Object roleObj = session.getAttribute("role");
         if (roleObj instanceof Integer) {
             int userType = (Integer) roleObj;
+            System.out.println("usertype: " + userType);
             return userType == 1; // True if they are an Admin
         }
-
+        System.out.println("False");
         return false;
     }
     

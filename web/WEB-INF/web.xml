@@ -110,7 +110,6 @@
     </context-param>
     <servlet>
         <servlet-name>LoginServlet</servlet-name>
-        <servlet-name>LoginServlet</servlet-name>
         <servlet-class>controller.LoginServlet</servlet-class>
         <init-param>
             <param-name>SecretKey</param-name>
@@ -146,7 +145,6 @@
         <servlet-class>controller.LogOutServlet</servlet-class>
     </servlet>
     <servlet-mapping>
-        <servlet-name>LoginServlet</servlet-name>
         <servlet-name>LoginServlet</servlet-name>
         <url-pattern>/loginServlet</url-pattern>
     </servlet-mapping>

@@ -10,6 +10,7 @@
 
     // 3. Kick them out to index.jsp if they are not userType 1 (Admin)
     if (userType != 1) {
+        System.out.println("reached, nto admin");
         if (activeSession != null) {
             activeSession.setAttribute("loginError", "Unauthorized access. Administrator privileges required.");
         }
@@ -241,7 +242,7 @@
                         <tbody>
                             <% if (instructors != null) { for (Map<String, String> inst : instructors) { %>
                             <tr>
-                                <td><span class="badge bg-secondary">INST-<%= inst.get("instId") %></span></td>
+                                <td><span class="badge bg-secondary"><%= inst.get("instId") %></span></td>
                                 <td><strong class="text-secondary"><%= inst.get("userId") %></strong></td>
                                 <td><%= inst.get("lastName") %>, <%= inst.get("firstName") %></td>
                                 <td><%= inst.get("email") %></td>
@@ -300,7 +301,7 @@
                         <tbody>
                             <% if (students != null) { for (Map<String, String> stu : students) { %>
                             <tr>
-                                <td><span class="badge bg-dark">STU-<%= stu.get("stuId") %></span></td>
+                                <td><span class="badge bg-dark"><%= stu.get("stuId") %></span></td>
                                 <td><span class="text-muted">@</span><%= stu.get("userId") %></td>
                                 <td><strong><%= stu.get("lastName") %>, <%= stu.get("firstName") %></strong></td>
                                 <td><%= stu.get("email") %></td>
