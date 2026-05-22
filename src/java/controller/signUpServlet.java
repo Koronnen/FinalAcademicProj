@@ -148,7 +148,7 @@ public class SignUpServlet extends HttpServlet {
         HttpSession s = request.getSession();
         
         String insertUserStr = "INSERT INTO USERS(USER_ID, USER_ROLE, EMAIL, PASSWORD) VALUES (?, 'STUDENT', ?, ?)";
-        String insertStudentStr = "INSERT INTO STUDENT(STU_ID, USER_ID, FNAME, LNAME, EMAIL) VALUES (?, ?, ?, ?, ?)";
+        String insertStudentStr = "INSERT INTO STUDENT(STU_ID, USER_ID, FNAME, LNAME) VALUES (?, ?, ?, ?)";
 
         try {
             // 1. Generate IDs efficiently using the new method
@@ -178,14 +178,12 @@ public class SignUpServlet extends HttpServlet {
                 psMysqlStudent.setString(2, usrID);
                 psMysqlStudent.setString(3, "");
                 psMysqlStudent.setString(4, "");
-                psMysqlStudent.setString(5, email);
                 psMysqlStudent.executeUpdate();
             }
 
             derbyConn.commit();
             mysqlConn.commit();
             
-            s.setAttribute("email", email);
             s.setAttribute("USER_ID", usrID);
             s.setAttribute("STU_LOG", stuID);
             s.setAttribute("USER_ROLE", "STUDENT"); 

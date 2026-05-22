@@ -16,12 +16,10 @@
     
     String studentFname = "";
     String studentLname = "";
-    String studentEmail = "";
     
     if (profileMap != null) {
         studentFname = profileMap.get("firstName") != null ? profileMap.get("firstName") : "";
         studentLname = profileMap.get("lastName") != null ? profileMap.get("lastName") : "";
-        studentEmail = profileMap.get("email") != null ? profileMap.get("email") : "";
     }
 
     List<Map<String, String>> enrolledCourses = (List<Map<String, String>>) request.getAttribute("enrolledCourses");
@@ -214,10 +212,6 @@
                                     <span class="text-muted small d-block uppercase fw-semibold">Last Name</span>
                                     <span class="fs-6 fw-bold text-dark"><%= studentLname.isEmpty() ? "—" : studentLname %></span>
                                 </div>
-                                <div class="col-md-4">
-                                    <span class="text-muted small d-block uppercase fw-semibold">Email Address</span>
-                                    <span class="fs-6 fw-bold text-dark"><%= studentEmail.isEmpty() ? "—" : studentEmail %></span>
-                                </div>
                             </div>
                         </div>
                         <form action="${pageContext.request.contextPath}/StudentServlet" method="POST">
@@ -231,10 +225,6 @@
                                 <div class="col-md-6">
                                     <label class="form-label small fw-bold">Last Name</label>
                                     <input type="text" name="lname" class="form-control" value="<%= studentLname %>" required>
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label small fw-bold">Email Base Address</label>
-                                    <input type="email" name="email" class="form-control" value="<%= studentEmail %>" required>
                                 </div>
                                 <div class="col-12 text-end mt-4 d-flex justify-content-between align-items-center">
                                     <button type="button" class="btn btn-sm btn-link text-danger p-0 border-0 text-decoration-none fw-semibold" 

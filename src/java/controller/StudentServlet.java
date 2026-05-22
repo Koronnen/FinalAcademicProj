@@ -95,7 +95,7 @@ public class StudentServlet extends HttpServlet {
         List<Map<String, Object>> courseCatalog = new ArrayList<>();
         
         try (Connection sqlConn = getMySQLConnection()) {
-            String sqlQuery = "SELECT STU_ID, FNAME, LNAME, EMAIL FROM STUDENT WHERE USER_ID = ?";
+            String sqlQuery = "SELECT STU_ID, FNAME, LNAME FROM STUDENT WHERE USER_ID = ?";
             try (PreparedStatement ps = sqlConn.prepareStatement(sqlQuery)) {
                 ps.setString(1, usrID);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -103,7 +103,6 @@ public class StudentServlet extends HttpServlet {
                         profile.put("stuId", rs.getString("STU_ID"));
                         profile.put("firstName", rs.getString("FNAME"));
                         profile.put("lastName", rs.getString("LNAME"));
-                        profile.put("email", rs.getString("EMAIL"));
                         
                         if (rs.getString("FNAME") != null && !rs.getString("FNAME").trim().isEmpty()) {
                             displayName = rs.getString("FNAME");
@@ -113,19 +112,6 @@ public class StudentServlet extends HttpServlet {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            try (Connection derbyConn = getDerbyConnection()) {
-                String derbyQuery = "SELECT EMAIL FROM USERS WHERE USER_ID = ?";
-                try (PreparedStatement psD = derbyConn.prepareStatement(derbyQuery)) {
-                    psD.setString(1, usrID);
-                    try (ResultSet rsD = psD.executeQuery()) {
-                        if (rsD.next()) {
-                            profile.put("email", rsD.getString("EMAIL"));
-                        }
-                    }
-                }
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
         }
 
         String studentId = profile.getOrDefault("stuId", "");
@@ -240,18 +226,15 @@ public class StudentServlet extends HttpServlet {
             if ("updateProfile".equals(action)) {
                 String inputFName = request.getParameter("fname");
                 String inputLName = request.getParameter("lname");
-                String inputEmail = request.getParameter("email");
 
                 String finalFName = (inputFName != null) ? inputFName.trim() : "";
                 String finalLName = (inputLName != null) ? inputLName.trim() : "";
-                String finalEmail = (inputEmail != null) ? inputEmail.trim() : "";
 
-                String updateSql = "UPDATE STUDENT SET FNAME = ?, LNAME = ?, EMAIL = ? WHERE USER_ID = ?";
+                String updateSql = "UPDATE STUDENT SET FNAME = ?, LNAME = ? WHERE USER_ID = ?";
                 try (PreparedStatement ps = sqlConn.prepareStatement(updateSql)) {
                     ps.setString(1, finalFName);
                     ps.setString(2, finalLName);
-                    ps.setString(3, finalEmail);
-                    ps.setString(4, usrID);
+                    ps.setString(3, usrID);
                     ps.executeUpdate();
                 }                
                 logAction("Applied Student Profile Changes", authorID);
