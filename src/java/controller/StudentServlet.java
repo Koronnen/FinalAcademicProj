@@ -50,16 +50,16 @@ public class StudentServlet extends HttpServlet {
     }
     
     private Connection getPostgresConnection() throws SQLException, ClassNotFoundException {
-    String driver = getServletContext().getInitParameter("postgres.jdbcClassName");
-    String url = getServletContext().getInitParameter("postgres.jdbcDriverURL") + "://" +
-                 getServletContext().getInitParameter("postgres.dbHostName") + ":" +
-                 getServletContext().getInitParameter("postgres.dbPort") + "/" +
-                 getServletContext().getInitParameter("postgres.databaseName");
-    String user = getServletContext().getInitParameter("postgres.dbUserName");
-    String pass = getServletContext().getInitParameter("postgres.dbPassword");
+        String driver = getServletContext().getInitParameter("postgres.jdbcClassName");
+        String url = getServletContext().getInitParameter("postgres.jdbcDriverURL") + "://" +
+                     getServletContext().getInitParameter("postgres.dbHostName") + ":" +
+                     getServletContext().getInitParameter("postgres.dbPort") + "/" +
+                     getServletContext().getInitParameter("postgres.databaseName");
+        String user = getServletContext().getInitParameter("postgres.dbUserName");
+        String pass = getServletContext().getInitParameter("postgres.dbPassword");
 
-    Class.forName(driver);
-    return DriverManager.getConnection(url, user, pass);
+        Class.forName(driver);
+        return DriverManager.getConnection(url, user, pass);
     }
     
     @Override
@@ -67,39 +67,44 @@ public class StudentServlet extends HttpServlet {
             throws ServletException, IOException {
         
         HttpSession session = request.getSession(false);
-        if (session == null || !"STUDENT".equalsIgnoreCase((String) session.getAttribute("USER_ROLE"))) {
+        if (session == null || session.getAttribute("USER_ID") == null) {
             response.sendRedirect("index.jsp");
             return;
         }
 
         String usrID = (String) session.getAttribute("USER_ID");
         String displayName = "Student";
-        String dbStudentId = "", dbFName = "", dbLName = "", dbEmail = "";
+        
+        Map<String, String> profile = new HashMap<>();
+        List<Map<String, String>> enrolledCourses = new ArrayList<>();
+        List<Map<String, Object>> courseCatalog = new ArrayList<>();
         
         try (Connection sqlConn = getMySQLConnection()) {
-            // 1. Attempt to grab profile data from primary MySQL Database
             String sqlQuery = "SELECT STU_ID, FNAME, LNAME, EMAIL FROM STUDENT WHERE USER_ID = ?";
             try (PreparedStatement ps = sqlConn.prepareStatement(sqlQuery)) {
                 ps.setString(1, usrID);
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
-                        dbStudentId = rs.getString("STU_ID");
-                        dbFName = rs.getString("FNAME");
-                        dbLName = rs.getString("LNAME");
-                        dbEmail = rs.getString("EMAIL");
+                        profile.put("stuId", rs.getString("STU_ID"));
+                        profile.put("firstName", rs.getString("FNAME"));
+                        profile.put("lastName", rs.getString("LNAME"));
+                        profile.put("email", rs.getString("EMAIL"));
+                        
+                        if (rs.getString("FNAME") != null && !rs.getString("FNAME").trim().isEmpty()) {
+                            displayName = rs.getString("FNAME");
+                        }
                     }
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
-            // MySQL failed or record missing, attempting secondary Apache Derby fallback authentication
             try (Connection derbyConn = getDerbyConnection()) {
                 String derbyQuery = "SELECT EMAIL FROM USERS WHERE USER_ID = ?";
                 try (PreparedStatement psD = derbyConn.prepareStatement(derbyQuery)) {
                     psD.setString(1, usrID);
                     try (ResultSet rsD = psD.executeQuery()) {
                         if (rsD.next()) {
-                            dbEmail = rsD.getString("EMAIL");
+                            profile.put("email", rsD.getString("EMAIL"));
                         }
                     }
                 }
@@ -108,27 +113,39 @@ public class StudentServlet extends HttpServlet {
             }
         }
 
-        // Set dynamic presentation greeting logic
-        if (dbFName != null && !dbFName.trim().isEmpty()) {
-            displayName = dbFName;
-        }
-        
-        request.setAttribute("displayName", displayName);
-        request.setAttribute("stuId", dbStudentId);
-        request.setAttribute("fname", dbFName);
-        request.setAttribute("lname", dbLName);
-        request.setAttribute("email", dbEmail);
+        String studentId = profile.getOrDefault("stuId", "");
 
-        // 2. Load Available Courses, Assigned Instructors, and Schedules from MySQL
-        List<Map<String, Object>> courseCatalog = new ArrayList<>();
         try (Connection sqlConn = getMySQLConnection()) {
+            if (!studentId.isEmpty()) {
+                String enrolledSql = "SELECT c.COURSE_CODE, c.COURSE_NAME, s.DAY_OF_WEEK, s.TIME_START, s.TIME_END " +
+                                     "FROM ENROLLMENT e " +
+                                     "JOIN INSTRUCTORS_COURSE ic ON e.INST_C_ID = ic.INST_C_ID " +
+                                     "JOIN COURSE c ON ic.COURSE_ID = c.COURSE_ID " +
+                                     "LEFT JOIN SCHEDULE s ON ic.INST_C_ID = s.INST_C_ID " +
+                                     "WHERE e.STU_ID = ?";
+                try (PreparedStatement ps = sqlConn.prepareStatement(enrolledSql)) {
+                    ps.setString(1, studentId);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        while (rs.next()) {
+                            Map<String, String> row = new HashMap<>();
+                            row.put("courseCode", rs.getString("COURSE_CODE"));
+                            row.put("courseName", rs.getString("COURSE_NAME"));
+                            String day = rs.getString("DAY_OF_WEEK");
+                            String start = rs.getString("TIME_START");
+                            String end = rs.getString("TIME_END");
+                            row.put("timeDetails", (day != null && start != null && end != null) ? day + " (" + start + " - " + end + ")" : "No active timetable node assigned");
+                            enrolledCourses.add(row);
+                        }
+                    }
+                }
+            }
+
             String catalogQuery = "SELECT c.COURSE_ID, c.COURSE_CODE, c.COURSE_NAME, " +
                                   "ic.INST_C_ID, i.FNAME AS iFName, i.LNAME AS iLName, " +
                                   "s.SCHED_ID, s.DAY_OF_WEEK, s.TIME_START, s.TIME_END " +
                                   "FROM COURSE c " +
                                   "JOIN INSTRUCTORS_COURSE ic ON c.COURSE_ID = ic.COURSE_ID " +
                                   "JOIN INSTRUCTOR i ON ic.INST_ID = i.INST_ID " +
-                                  "LEFT JOIN SCHEDULE i_sched ON ic.INST_C_ID = i_sched.INST_C_ID " +
                                   "LEFT JOIN SCHEDULE s ON ic.INST_C_ID = s.INST_C_ID";
             
             try (PreparedStatement ps = sqlConn.prepareStatement(catalogQuery);
@@ -165,7 +182,11 @@ public class StudentServlet extends HttpServlet {
             e.printStackTrace();
         }
         
+        request.setAttribute("displayName", displayName);
+        request.setAttribute("profile", profile);
+        request.setAttribute("enrolledCourses", enrolledCourses);
         request.setAttribute("availableCourses", courseCatalog);
+        
         request.getRequestDispatcher("/StudentDashboard.jsp").forward(request, response);
     }
 
@@ -217,20 +238,17 @@ public class StudentServlet extends HttpServlet {
                 logAction("Applied Student Profile Changes", authorID);
             } 
             else if ("clearProfile".equals(action)) {
-                // Clear the optional profile details safely while observing database NOT NULL constraints
                 String clearSql = "UPDATE STUDENT SET FNAME = '', LNAME = '' WHERE USER_ID = ?";
                 try (PreparedStatement ps = sqlConn.prepareStatement(clearSql)) {
                     ps.setString(1, usrID);
                     ps.executeUpdate();
                 }
-                
                 logAction("Cleared " + authorID + " Student Profile", authorID);
             }
             else if ("enrollCourse".equals(action)) {
                 String instCourseId = request.getParameter("instCourseId");
                 
                 if (!stuId.isEmpty() && instCourseId != null && !instCourseId.isEmpty()) {
-                    // Generate a tracking unique key constraint string ID matching CHAR(9) length constraints
                     String enrollmentId = UUID.randomUUID().toString().substring(0, 9).toUpperCase();
                     
                     String enrollSql = "INSERT INTO ENROLLMENT (STU_EN_ID, STU_ID, INST_C_ID) VALUES (?, ?, ?)";
@@ -247,7 +265,6 @@ public class StudentServlet extends HttpServlet {
             e.printStackTrace();
         }
 
-        // Post-Redirect-Get pattern clears transaction data and pulls fresh state in doGet
         response.sendRedirect(request.getContextPath() + "/StudentServlet");
     }
     

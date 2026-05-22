@@ -6,11 +6,12 @@
             <file>file:/C:/Users/Marjorie/Documents/NetBeansProjects/FinalAcademicProj/web/WEB-INF/web.xml</file>
             <file>file:/C:/Users/Marjorie/Documents/NetBeansProjects/FinalAcademicProj/web/AdminDashboard.jsp</file>
             <file>file:/C:/Users/Marjorie/Documents/NetBeansProjects/FinalAcademicProj/src/java/controller/LoginServlet.java</file>
+            <file>file:/C:/Users/Marjorie/Documents/NetBeansProjects/FinalAcademicProj/web/StudentDashboard.jsp</file>
             <file>file:/C:/Users/Marjorie/Documents/NetBeansProjects/FinalAcademicProj/web/signUp.jsp</file>
             <file>file:/C:/Users/Marjorie/Documents/NetBeansProjects/FinalAcademicProj/web/index.jsp</file>
             <file>file:/C:/Users/Marjorie/Documents/NetBeansProjects/FinalAcademicProj/src/java/controller/SignUpServlet.java</file>
-            <file>file:/C:/Users/Marjorie/Documents/NetBeansProjects/FinalAcademicProj/src/java/controller/StudentServlet.java</file>
             <file>file:/C:/Users/Marjorie/Documents/NetBeansProjects/FinalAcademicProj/src/java/controller/AdminDashboardServlet.java</file>
+            <file>file:/C:/Users/Marjorie/Documents/NetBeansProjects/FinalAcademicProj/src/java/controller/StudentServlet.java</file>
         </group>
     </open-files>
 </project-private>

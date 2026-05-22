@@ -13,6 +13,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession; // Imported for Session Tracking
 
 public class AdminDashboardServlet extends HttpServlet {
     
@@ -71,7 +72,6 @@ public class AdminDashboardServlet extends HttpServlet {
         }
     }
 
-    // Helper method to generate sequential custom alphanumeric string IDs
     private String generateNextCustomID(Connection conn, String tableName, String idColumnName, String prefix) throws SQLException {
         String sql = "SELECT " + idColumnName + " FROM " + tableName + " WHERE " + idColumnName + " LIKE '" + prefix + "%' ORDER BY " + idColumnName + " DESC LIMIT 1";
         try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
@@ -87,6 +87,13 @@ public class AdminDashboardServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // ADDED HERE: Verify login status via USER_ID session token
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("USER_ID") == null) {
+            response.sendRedirect("index.jsp");
+            return;
+        }
+
         List<Map<String, String>> instructors = new ArrayList<>();
         List<Map<String, String>> students = new ArrayList<>();
         List<Map<String, String>> courses = new ArrayList<>();
@@ -94,7 +101,6 @@ public class AdminDashboardServlet extends HttpServlet {
         Map<String, List<Map<String, String>>> instructorCalendars = new HashMap<>();
 
         try (Connection conn = getMySQLConnection()) {
-            // 1. Fetch Instructors joined with USERS matching new DDL layout
             String instSql = "SELECT i.INST_ID, i.FNAME, i.LNAME, i.EMAIL, u.USER_ID FROM INSTRUCTOR i JOIN USERS u ON i.USER_ID = u.USER_ID";
             try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(instSql)) {
                 while (rs.next()) {
@@ -108,7 +114,6 @@ public class AdminDashboardServlet extends HttpServlet {
                 }
             }
 
-            // 2. Fetch Students joined with USERS matching new DDL layout
             String stuSql = "SELECT s.STU_ID, s.FNAME, s.LNAME, s.EMAIL, u.USER_ID FROM STUDENT s JOIN USERS u ON s.USER_ID = u.USER_ID";
             try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(stuSql)) {
                 while (rs.next()) {
@@ -122,7 +127,6 @@ public class AdminDashboardServlet extends HttpServlet {
                 }
             }
 
-            // 3. Fetch Curriculum Courses
             String courseSql = "SELECT COURSE_ID, COURSE_CODE, COURSE_NAME, COURSE_LENGTH FROM COURSE";
             try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(courseSql)) {
                 while (rs.next()) {
@@ -135,7 +139,6 @@ public class AdminDashboardServlet extends HttpServlet {
                 }
             }
 
-            // 4. Fetch Active Course Offerings Roster for Student enrollment Dropdowns
             String schedOptionsSql = "SELECT s.SCHED_ID, ic.INST_C_ID, c.COURSE_NAME, i.LNAME, s.DAY_OF_WEEK, s.TIME_START " +
                                      "FROM SCHEDULE s JOIN INSTRUCTORS_COURSE ic ON s.INST_C_ID = ic.INST_C_ID " +
                                      "JOIN COURSE c ON ic.COURSE_ID = c.COURSE_ID JOIN INSTRUCTOR i ON ic.INST_ID = i.INST_ID";
@@ -152,14 +155,13 @@ public class AdminDashboardServlet extends HttpServlet {
                 }
             }
 
-            // 5. Build Academic Timetable Matrices safely matching the actual DDL constraints
             String calSql = "SELECT ic.INST_ID, c.COURSE_CODE, s.DAY_OF_WEEK, s.TIME_START " +
                              "FROM SCHEDULE s " +
                              "JOIN INSTRUCTORS_COURSE ic ON s.INST_C_ID = ic.INST_C_ID " +
                              "JOIN COURSE c ON ic.COURSE_ID = c.COURSE_ID";
             try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(calSql)) {
                 while (rs.next()) {
-                    String instId = rs.getString("INST_ID"); // Correctly extracts the structural faculty key
+                    String instId = rs.getString("INST_ID");
                     Map<String, String> appointment = new HashMap<>();
                     appointment.put("code", rs.getString("COURSE_CODE"));
                     appointment.put("day", rs.getString("DAY_OF_WEEK"));
@@ -169,11 +171,9 @@ public class AdminDashboardServlet extends HttpServlet {
             }
 
         } catch (Exception e) {
-            // EXPOSE THE ROOT ERROR: This prints the exact table/column name causing your crash to your IDE console!
             System.err.println("--- CRITICAL DASHBOARD INITIALIZATION ERROR ---");
             e.printStackTrace();
             
-            // Safety Net: Ensure the JSP receives non-null collections even if the database fails
             if (request.getAttribute("instructors") == null) request.setAttribute("instructors", new ArrayList<>());
             if (request.getAttribute("students") == null) request.setAttribute("students", new ArrayList<>());
             if (request.getAttribute("courses") == null) request.setAttribute("courses", new ArrayList<>());
@@ -181,12 +181,6 @@ public class AdminDashboardServlet extends HttpServlet {
             if (request.getAttribute("instructorCalendars") == null) request.setAttribute("instructorCalendars", new HashMap<>());
         }
         
-        System.out.println("Instructors size: " + instructors.size());
-        System.out.println("Students size: " + students.size());
-        System.out.println("Courses size: " + courses.size());
-        System.out.println("Schedules size: " + schedulesList.size());
-        
-        // This line must run out here to render what is available
         request.setAttribute("instructors", instructors);
         request.setAttribute("students", students);
         request.setAttribute("courses", courses);
@@ -197,8 +191,16 @@ public class AdminDashboardServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // ADDED HERE: Verify login status via USER_ID session token
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("USER_ID") == null) {
+            response.sendRedirect("index.jsp");
+            return;
+        }
+
         String action = request.getParameter("action");
-        String authorId = "USR000001"; 
+        // CHANGED HERE: Extract the actual active Administrator account ID for telemetry logs
+        String authorId = (String) session.getAttribute("USER_ID"); 
 
         try (Connection conn = getMySQLConnection()) {
             conn.setAutoCommit(true);
@@ -213,7 +215,6 @@ public class AdminDashboardServlet extends HttpServlet {
 
                     String uSql = "INSERT INTO USERS (USER_ID, USER_ROLE, EMAIL, PASSWORD) VALUES (?, 'INSTRUCTOR', ?, ?)";
 
-                    // 1. Write to MySQL
                     try (PreparedStatement ps = conn.prepareStatement(uSql)) {
                         ps.setString(1, nextUserId);
                         ps.setString(2, request.getParameter("email"));
@@ -221,7 +222,6 @@ public class AdminDashboardServlet extends HttpServlet {
                         ps.executeUpdate();
                     }
 
-                    // 2. Mirror directly to Derby
                     try (Connection derbyConn = getDerbyConnection()) {
                         derbyConn.setAutoCommit(false);
                         try (PreparedStatement psDerby = derbyConn.prepareStatement(uSql)) {
@@ -230,14 +230,13 @@ public class AdminDashboardServlet extends HttpServlet {
                             psDerby.setString(3, encryptedPassword);
                             psDerby.executeUpdate();
                         }
-                        derbyConn.commit(); // Commit Derby entry
+                        derbyConn.commit();
                     } catch (Exception e) {
                         e.printStackTrace();
                         System.err.println("Derby Mirroring Failed: " + e.getMessage());
                         throw new SQLException("Derby sync failure, rolling back transaction.", e);
                     }
 
-                    // 3. Write to Instructor Table in MySQL
                     String iSql = "INSERT INTO INSTRUCTOR (INST_ID, USER_ID, FNAME, LNAME, EMAIL) VALUES (?, ?, ?, ?, ?)";
                     try (PreparedStatement ps = conn.prepareStatement(iSql)) {
                         ps.setString(1, nextInstId);
@@ -248,7 +247,7 @@ public class AdminDashboardServlet extends HttpServlet {
                         ps.executeUpdate();
                     }
 
-                    conn.commit(); // Commit MySQL entry
+                    conn.commit();
                     logAction("Created Alphanumeric Sequential Instructor Entry: " + nextInstId, authorId);
                     break;
                 }
@@ -292,7 +291,6 @@ public class AdminDashboardServlet extends HttpServlet {
                     String uId = request.getParameter("userId");
                     String instId = request.getParameter("instId");
                     
-                    // Cascade deletes sequentially through child operational mappings
                     String clearSched = "DELETE FROM SCHEDULE WHERE INST_C_ID = ?";
                     try (PreparedStatement ps = conn.prepareStatement(clearSched)) {
                         ps.setString(1, instId);
@@ -350,11 +348,10 @@ public class AdminDashboardServlet extends HttpServlet {
 
                     String nextSchedId = generateNextCustomID(conn, "SCHEDULE", "SCHED_ID", "SCD");
 
-                    // FIX: Change INST_ID to INST_C_ID to match your doGet query expectations!
                     String sSql = "INSERT INTO SCHEDULE (SCHED_ID, INST_C_ID, DAY_OF_WEEK, TIME_START) VALUES (?, ?, ?, ?)";
                     try (PreparedStatement ps = conn.prepareStatement(sSql)) {
                         ps.setString(1, nextSchedId);
-                        ps.setString(2, instCId); // <--- Pass the generated/found instCId token here
+                        ps.setString(2, instCId);
                         ps.setString(3, request.getParameter("dayOfWeek").toUpperCase()); 
                         ps.setString(4, request.getParameter("timeStart"));
                         ps.executeUpdate();
@@ -364,7 +361,7 @@ public class AdminDashboardServlet extends HttpServlet {
                     break;
                 }
                 case "addStudent": {
-                    conn.setAutoCommit(false); // Begin transaction safely
+                    conn.setAutoCommit(false);
 
                     String rawPassword = request.getParameter("password");
                     String encryptedPassword = Security.encrypt(rawPassword, getServletContext());
@@ -372,19 +369,16 @@ public class AdminDashboardServlet extends HttpServlet {
                     String nextUserId = generateNextCustomID(conn, "USERS", "USER_ID", "USR");
                     String nextStuId = generateNextCustomID(conn, "STUDENT", "STU_ID", "STU");
 
-                    // Fetch parameters defensively
                     String firstName = request.getParameter("firstName");
                     String lastName = request.getParameter("lastName");
                     String email = request.getParameter("email");
 
-                    // Block empty submissions before sending to database
                     if (firstName == null || lastName == null || email == null) {
                         throw new SQLException("Form payload validation failed. Input field names do not match Servlet properties.");
                     }
 
                     String uSql = "INSERT INTO USERS (USER_ID, USER_ROLE, EMAIL, PASSWORD) VALUES (?, 'STUDENT', ?, ?)";
 
-                    // 1. Write to MySQL
                     try (PreparedStatement ps = conn.prepareStatement(uSql)) {
                         ps.setString(1, nextUserId);
                         ps.setString(2, email);
@@ -392,7 +386,6 @@ public class AdminDashboardServlet extends HttpServlet {
                         ps.executeUpdate();
                     }
 
-                    // 2. Mirror directly to Derby
                     try (Connection derbyConn = getDerbyConnection()) {
                         derbyConn.setAutoCommit(false);
                         try (PreparedStatement psDerby = derbyConn.prepareStatement(uSql)) {
@@ -401,13 +394,12 @@ public class AdminDashboardServlet extends HttpServlet {
                             psDerby.setString(3, encryptedPassword);
                             psDerby.executeUpdate();
                         }
-                        derbyConn.commit(); // Commit Derby entry
+                        derbyConn.commit();
                     } catch (Exception e) {
                         System.err.println("Derby Mirroring Failed: " + e.getMessage());
                         throw new SQLException("Derby sync failure, rolling back transaction.", e);
                     }
 
-                    // 3. Write to Student Table in MySQL
                     String sSql = "INSERT INTO STUDENT (STU_ID, USER_ID, FNAME, LNAME, EMAIL) VALUES (?, ?, ?, ?, ?)";
                     try (PreparedStatement ps = conn.prepareStatement(sSql)) {
                         ps.setString(1, nextStuId);
@@ -418,7 +410,7 @@ public class AdminDashboardServlet extends HttpServlet {
                         ps.executeUpdate();
                     }
 
-                    conn.commit(); // Commit saved parameters cleanly to MySQL
+                    conn.commit();
                     logAction("Created Student Profile: " + nextStuId, authorId);
                     break;
                 }
@@ -499,7 +491,6 @@ public class AdminDashboardServlet extends HttpServlet {
                         if (rs.next()) courseId = rs.getString("COURSE_ID");
                     }
 
-                    // Populate operational synchronization across standard associative entities
                     String nextStcId = generateNextCustomID(conn, "STUDENT_COURSE", "STU_C_ID", "STC");
                     String scSql = "INSERT INTO STUDENT_COURSE (STU_C_ID, COURSE_ID, STU_ID) VALUES (?, ?, ?)";
                     try (PreparedStatement ps = conn.prepareStatement(scSql)) {
@@ -522,7 +513,6 @@ public class AdminDashboardServlet extends HttpServlet {
                     break;
                 }
                 case "addCourse": {
-                    // Safely enforce transaction control
                     conn.setAutoCommit(false); 
 
                     String nextCourseId = generateNextCustomID(conn, "COURSE", "COURSE_ID", "CRS");
@@ -535,13 +525,11 @@ public class AdminDashboardServlet extends HttpServlet {
                         ps.executeUpdate();
                     }
 
-                    // COMMIT THE TRANSACTION SO IT REFLECTS IN THE DB
                     conn.commit(); 
                     logAction("Registered Alphanumeric Sequential Course Node: " + nextCourseId, authorId);
                     break;
                 }
                 case "editCourse": {
-                    // Safely enforce transaction control
                     conn.setAutoCommit(false); 
 
                     String cSql = "UPDATE COURSE SET COURSE_CODE = ?, COURSE_NAME = ?, COURSE_LENGTH = ? WHERE COURSE_ID = ?";
@@ -553,7 +541,6 @@ public class AdminDashboardServlet extends HttpServlet {
                         ps.executeUpdate();
                     }
 
-                    // COMMIT THE TRANSACTION SO IT REFLECTS IN THE DB
                     conn.commit(); 
                     logAction("Altered course core schema descriptor configurations for identification key: " + request.getParameter("courseId"), authorId);
                     break;
@@ -595,17 +582,14 @@ public class AdminDashboardServlet extends HttpServlet {
         } catch (SQLException e) {
             System.err.println("Database Transaction Aborted!");
             e.printStackTrace();
-            // Send the error to the browser screen
             response.getWriter().println("SQL ERROR: " + e.getMessage());
-            return; // Stop the redirect
+            return;
         } catch (Exception e) {
             e.printStackTrace();
-            // Send the error to the browser screen
             response.getWriter().println("GENERAL ERROR: " + e.getMessage());
-            return; // Stop the redirect
+            return;
         }
 
-        // If we make it here, NO errors happened!
         response.sendRedirect("AdminDashboardServlet");
     }
 }
