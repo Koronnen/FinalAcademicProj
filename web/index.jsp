@@ -58,7 +58,7 @@
                 </div>
 
                 <button type="submit" class="submit-btn">
-                    <span class="btn-text">Sign In</span>
+                    <span class="btn-text">Log In</span>
                     <div class="btn-loader"></div>
                 </button>
             </form>

@@ -119,23 +119,30 @@ public class StudentServlet extends HttpServlet {
         try (Connection sqlConn = getMySQLConnection()) {
             if (!studentId.isEmpty()) {
                 String enrolledSql = "SELECT c.COURSE_CODE, c.COURSE_NAME, s.DAY_OF_WEEK, s.TIME_START, s.TIME_END " +
-                                     "FROM ENROLLMENT e " +
-                                     "JOIN INSTRUCTORS_COURSE ic ON e.INST_C_ID = ic.INST_C_ID " +
-                                     "JOIN COURSE c ON ic.COURSE_ID = c.COURSE_ID " +
-                                     "LEFT JOIN SCHEDULE s ON ic.INST_C_ID = s.INST_C_ID " +
-                                     "WHERE e.STU_ID = ?";
+                                    "FROM ENROLLMENT e " +
+                                    "JOIN SCHEDULE s ON e.SCHED_ID = s.SCHED_ID " +
+                                    "JOIN INSTRUCTORS_COURSE ic ON s.INST_C_ID = ic.INST_C_ID " +
+                                    "JOIN COURSE c ON ic.COURSE_ID = c.COURSE_ID " +
+                                    "WHERE e.STU_ID = ?";
                 try (PreparedStatement ps = sqlConn.prepareStatement(enrolledSql)) {
                     ps.setString(1, studentId);
                     try (ResultSet rs = ps.executeQuery()) {
                         while (rs.next()) {
                             Map<String, String> row = new HashMap<>();
                             row.put("courseCode", rs.getString("COURSE_CODE"));
-                            row.put("courseName", rs.getString("COURSE_NAME"));
-                            String day = rs.getString("DAY_OF_WEEK");
-                            String start = rs.getString("TIME_START");
-                            String end = rs.getString("TIME_END");
-                            row.put("timeDetails", (day != null && start != null && end != null) ? day + " (" + start + " - " + end + ")" : "No active timetable node assigned");
-                            enrolledCourses.add(row);
+                            while (rs.next()) {
+                                Map<String, String> r = new HashMap<>();
+                                r.put("courseCode", rs.getString("COURSE_CODE"));
+                                r.put("courseName", rs.getString("COURSE_NAME"));
+
+                                // Smooth, verified string building string extraction
+                                String day = rs.getString("DAY_OF_WEEK");
+                                String start = rs.getString("TIME_START");
+                                String end = rs.getString("TIME_END");
+                                r.put("timeDetails", day + " (" + start + " - " + end + ")");
+
+                                enrolledCourses.add(r);
+                            }
                         }
                     }
                 }

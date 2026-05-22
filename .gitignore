@@ -2,3 +2,8 @@ drivers/
 /build/
 /dist/
 nbproject/private/
+nbproject/build-impl.xml
+<<<<<<< HEAD
+scripts/
+=======
+>>>>>>> 831d3df8069de8cda5eba57f152d5766d3a6e8e1
