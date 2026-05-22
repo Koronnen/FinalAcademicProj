@@ -7,6 +7,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement; // Added import for Statement
 import java.sql.Time;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -60,6 +61,20 @@ public class StudentServlet extends HttpServlet {
 
         Class.forName(driver);
         return DriverManager.getConnection(url, user, pass);
+    }
+
+    // New custom ID generator method
+    private String generateNextCustomID(Connection conn, String tableName, String idColumnName, String prefix) throws SQLException {
+        String sql = "SELECT " + idColumnName + " FROM " + tableName + " WHERE " + idColumnName + " LIKE '" + prefix + "%' ORDER BY " + idColumnName + " DESC LIMIT 1";
+        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                String latestId = rs.getString(idColumnName);
+                String numericPart = latestId.substring(prefix.length());
+                int nextNum = Integer.parseInt(numericPart) + 1;
+                return prefix + String.format("%06d", nextNum);
+            }
+        }
+        return prefix + "000001";
     }
     
     @Override
@@ -169,6 +184,7 @@ public class StudentServlet extends HttpServlet {
                     
                     String schedId = rs.getString("SCHED_ID");
                     if (schedId != null) {
+                        @SuppressWarnings("unchecked")
                         List<Map<String, String>> scheds = (List<Map<String, String>>) aggregationMap.get(instCourseId).get("schedulesList");
                         Map<String, String> timeSlot = new HashMap<>();
                         timeSlot.put("schedId", schedId);
@@ -252,7 +268,8 @@ public class StudentServlet extends HttpServlet {
                 String instCourseId = request.getParameter("instCourseId");
 
                 if (!stuId.isEmpty() && instCourseId != null && !instCourseId.isEmpty()) {
-                    String enrollmentId = UUID.randomUUID().toString().substring(0, 9).toUpperCase();
+                    // Replaced UUID generation with your custom ID generator
+                    String enrollmentId = generateNextCustomID(sqlConn, "ENROLLMENT", "STU_EN_ID", "ENR");
 
                     String enrollSql = "INSERT INTO ENROLLMENT (STU_EN_ID, STU_ID, INST_C_ID) VALUES (?, ?, ?)";
                     try (PreparedStatement ps = sqlConn.prepareStatement(enrollSql)) {
@@ -261,7 +278,7 @@ public class StudentServlet extends HttpServlet {
                         ps.setString(3, instCourseId);
                         ps.executeUpdate();
                     }
-                    logAction(authorID + "Successfully Enrolled to " + instCourseId, authorID);                    
+                    logAction(authorID + " Successfully Enrolled to " + instCourseId, authorID);                    
                 }
             }
         } catch (Exception e) {

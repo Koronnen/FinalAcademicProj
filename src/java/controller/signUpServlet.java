@@ -147,61 +147,15 @@ public class SignUpServlet extends HttpServlet {
     public boolean registerStudentDualWrite(String email, String password, HttpServletRequest request) {
         HttpSession s = request.getSession();
         
-        String selectUsers = "SELECT USER_ID FROM USERS";
-        String selectStudents = "SELECT STU_ID FROM STUDENT";
-        
         String insertUserStr = "INSERT INTO USERS(USER_ID, USER_ROLE, EMAIL, PASSWORD) VALUES (?, 'STUDENT', ?, ?)";
         String insertStudentStr = "INSERT INTO STUDENT(STU_ID, USER_ID, FNAME, LNAME, EMAIL) VALUES (?, ?, ?, ?, ?)";
-        
-        int lastUserNum = 0;
-        int lastStudentNum = 0;
-
-        try (PreparedStatement psUser = derbyConn.prepareStatement(selectUsers);
-             ResultSet rsUser = psUser.executeQuery()) {
-            
-            while (rsUser.next()) {
-                String currentUser = rsUser.getString("USER_ID");  
-                if (currentUser != null && currentUser.startsWith("USR") && currentUser.length() > 3) {
-                    try {
-                        int currentId = Integer.parseInt(currentUser.substring(3));
-                        if (currentId > lastUserNum) {
-                            lastUserNum = currentId;
-                        }
-                    } catch (NumberFormatException e) {
-                    }
-                }
-            }
-        } catch (SQLException err) {
-            err.printStackTrace();
-            return false;
-        }
-        
-        try (PreparedStatement psStu = mysqlConn.prepareStatement(selectStudents);
-             ResultSet rsStu = psStu.executeQuery()) {
-            
-            while (rsStu.next()) {
-                String currentStu = rsStu.getString("STU_ID");  
-                if (currentStu != null && currentStu.startsWith("STU") && currentStu.length() > 3) {
-                    try {
-                        int currentId = Integer.parseInt(currentStu.substring(3));
-                        if (currentId > lastStudentNum) {
-                            lastStudentNum = currentId;
-                        }
-                    } catch (NumberFormatException e) {
-                    }
-                }
-            }
-        } catch (SQLException err) {
-            err.printStackTrace();
-            return false;
-        }
-        
-        String usrID = String.format("USR%06d", (lastUserNum + 1));
-        String stuID = String.format("STU%06d", (lastStudentNum + 1));
-        String usrLogID = usrID;
-        String stuLogID = stuID;
 
         try {
+            // 1. Generate IDs efficiently using the new method
+            String usrID = generateNextCustomID(derbyConn, "USERS", "USER_ID", "USR");
+            String stuID = generateNextCustomID(mysqlConn, "STUDENT", "STU_ID", "STU");
+
+            // 2. Transaction Management across both databases
             derbyConn.setAutoCommit(false);
             mysqlConn.setAutoCommit(false);
 
@@ -233,7 +187,7 @@ public class SignUpServlet extends HttpServlet {
             
             s.setAttribute("email", email);
             s.setAttribute("USER_ID", usrID);
-            s.setAttribute("STU_LOG", stuLogID);
+            s.setAttribute("STU_LOG", stuID);
             s.setAttribute("USER_ROLE", "STUDENT"); 
             return true;
 
@@ -317,5 +271,22 @@ public class SignUpServlet extends HttpServlet {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    // Integrated helper method
+    private String generateNextCustomID(Connection conn, String tableName, String idColumnName, String prefix) throws SQLException {
+        String sql = "SELECT MAX(" + idColumnName + ") FROM " + tableName + " WHERE " + idColumnName + " LIKE '" + prefix + "%'";
+        try (PreparedStatement stmt = conn.prepareStatement(sql); 
+             ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                String latestId = rs.getString(1);
+                if (latestId != null) {
+                    String numericPart = latestId.substring(prefix.length());
+                    int nextNum = Integer.parseInt(numericPart) + 1;
+                    return prefix + String.format("%06d", nextNum);
+                }
+            }
+        }
+        return prefix + "000001";
     }
 }
