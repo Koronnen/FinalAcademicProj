@@ -20,7 +20,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import org.json.JSONObject;
 
-public class SignUpServlet extends HttpServlet {
+public class signUpServlet extends HttpServlet {
 
     private Connection derbyConn;
     private Connection mysqlConn;

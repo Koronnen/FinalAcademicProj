@@ -3,7 +3,7 @@
 <%
     // 1. Get the current active session state
     HttpSession activeSession = request.getSession(false);
-    
+
     // 2. Fetch the integer role status safely
     Object roleObj = (activeSession != null) ? activeSession.getAttribute("role") : null;
     int userType = (roleObj instanceof Integer) ? (Integer) roleObj : -1;
@@ -16,6 +16,26 @@
         }
         response.sendRedirect(request.getContextPath() + "/index.jsp");
         return; // Terminates page rendering immediately
+    }
+%>
+<%!
+    // Secure string escaping to prevent HTML tag leak or broken JS expressions
+    public String escapeHtml(Object input) {
+        if (input == null) return "";
+        return input.toString().replace("&", "&amp;")
+                               .replace("<", "&lt;")
+                               .replace(">", "&gt;")
+                               .replace("\"", "&quot;")
+                               .replace("'", "&#x27;");
+    }
+
+    public String escapeJs(Object input) {
+        if (input == null) return "";
+        return input.toString().replace("\\", "\\\\")
+                               .replace("'", "\\'")
+                               .replace("\"", "\\\"")
+                               .replace("\r", "\\r")
+                               .replace("\n", "\\n");
     }
 %>
 <!DOCTYPE html>
@@ -106,7 +126,7 @@
             padding: 1.5rem;
             margin-bottom: 2rem;
         }
-        .table classical-thead th {
+        .table thead th {
             background-color: #f1f5f9;
             color: #475569;
             font-weight: 600;
@@ -172,6 +192,7 @@
             List<Map<String, String>> courses = (List<Map<String, String>>) request.getAttribute("courses");
             List<Map<String, String>> schedulesList = (List<Map<String, String>>) request.getAttribute("schedulesList");
             Map<String, List<Map<String, String>>> instructorCalendars = (Map<String, List<Map<String, String>>>) request.getAttribute("instructorCalendars");
+            Map<String, List<Map<String, String>>> studentSchedules = (Map<String, List<Map<String, String>>>) request.getAttribute("studentSchedules");
 
             int countInst = (instructors != null) ? instructors.size() : 0;
             int countStu = (students != null) ? students.size() : 0;
@@ -212,8 +233,9 @@
             <div class="card p-4 border-0 shadow-sm rounded-3 bg-white mb-4">
                 <h5 class="fw-bold"><i class="fa-solid fa-circle-info text-primary me-2"></i>Operational Compliance Notice</h5>
                 <p class="text-muted m-0 small">
-                    All operations triggered inside this configuration panel utilize multi-database orchestration. Base schema operations write data into 
-                    the <strong>activelearning</strong> MySQL cluster engine. Audit operations broadcast actions to the enterprise PostgreSQL telemetry logger schema.
+                    All operations triggered inside this configuration panel utilize multi-database orchestration.
+                    Base schema operations write data into the <strong>activelearning</strong> MySQL cluster engine.
+                    Audit operations broadcast actions to the enterprise PostgreSQL telemetry logger schema.
                 </p>
             </div>
         </div>
@@ -242,26 +264,26 @@
                         <tbody>
                             <% if (instructors != null) { for (Map<String, String> inst : instructors) { %>
                             <tr>
-                                <td><span class="badge bg-secondary"><%= inst.get("instId") %></span></td>
-                                <td><strong class="text-secondary"><%= inst.get("userId") %></strong></td>
-                                <td><%= inst.get("lastName") %>, <%= inst.get("firstName") %></td>
-                                <td><%= inst.get("email") %></td>
+                                <td><span class="badge bg-secondary"><%= escapeHtml(inst.get("instId")) %></span></td>
+                                <td><strong class="text-secondary"><%= escapeHtml(inst.get("userId")) %></strong></td>
+                                <td><%= escapeHtml(inst.get("lastName")) %>, <%= escapeHtml(inst.get("firstName")) %></td>
+                                <td><%= escapeHtml(inst.get("email")) %></td>
                                 <td class="text-center">
-                                    <button class="btn btn-outline-secondary btn-sm px-3 me-2" onclick="openScheduleModal('<%= inst.get("instId") %>')">
+                                    <button class="btn btn-outline-secondary btn-sm px-3 me-2" onclick="openScheduleModal('<%= escapeJs(inst.get("instId")) %>')">
                                         <i class="fa-solid fa-calendar-plus me-1"></i> Add Sched
                                     </button>
-                                    <button class="btn btn-outline-dark btn-sm px-3" onclick="openCalendarModal('<%= inst.get("instId") %>', '<%= inst.get("lastName") %>')">
+                                    <button class="btn btn-outline-dark btn-sm px-3" onclick="openCalendarModal('<%= escapeJs(inst.get("instId")) %>', '<%= escapeJs(inst.get("lastName")) %>')">
                                         <i class="fa-solid fa-eye me-1"></i> View Weekly Sched
                                     </button>
                                 </td>
                                 <td class="text-end">
-                                    <button class="btn btn-light btn-sm text-warning me-1" onclick="populateEditInstructorModal('<%= inst.get("instId") %>', '<%= inst.get("userId") %>', '<%= inst.get("userId") %>', '<%= inst.get("firstName") %>', '<%= inst.get("lastName") %>', '<%= inst.get("email") %>')">
+                                    <button class="btn btn-light btn-sm text-warning me-1" onclick="populateEditInstructorModal('<%= escapeJs(inst.get("instId")) %>', '<%= escapeJs(inst.get("userId")) %>', '<%= escapeJs(inst.get("userId")) %>', '<%= escapeJs(inst.get("firstName")) %>', '<%= escapeJs(inst.get("lastName")) %>', '<%= escapeJs(inst.get("email")) %>')">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
-                                    <form action="AdminDashboardServlet" method="POST" class="d-inline" onsubmit="return confirm('Delete this instructor? This clears authentication details too.');">
+                                    <form action="AdminDashboardServlet" method="POST" class="d-inline" onsubmit="return confirm('Delete this instructor?\nThis clears authentication details too.');">
                                         <input type="hidden" name="action" value="deleteInstructor">
-                                        <input type="hidden" name="instId" value="<%= inst.get("instId") %>">
-                                        <input type="hidden" name="userId" value="<%= inst.get("userId") %>">
+                                        <input type="hidden" name="instId" value="<%= escapeHtml(inst.get("instId")) %>">
+                                        <input type="hidden" name="userId" value="<%= escapeHtml(inst.get("userId")) %>">
                                         <button type="submit" class="btn btn-light btn-sm text-danger"><i class="fa-solid fa-trash-can"></i></button>
                                     </form>
                                 </td>
@@ -295,24 +317,60 @@
                                 <th>Username Handle</th>
                                 <th>Full Legal Name</th>
                                 <th>Email Configuration</th>
+                                <th>Enrolled Classes</th>
                                 <th class="text-end">Actions Interface</th>
                             </tr>
                         </thead>
                         <tbody>
                             <% if (students != null) { for (Map<String, String> stu : students) { %>
                             <tr>
-                                <td><span class="badge bg-dark"><%= stu.get("stuId") %></span></td>
-                                <td><span class="text-muted">@</span><%= stu.get("userId") %></td>
-                                <td><strong><%= stu.get("lastName") %>, <%= stu.get("firstName") %></strong></td>
-                                <td><%= stu.get("email") %></td>
+                                <td><span class="badge bg-dark"><%= escapeHtml(stu.get("stuId")) %></span></td>
+                                <td><span class="text-muted">@</span><%= escapeHtml(stu.get("userId")) %></td>
+                                <td><strong><%= escapeHtml(stu.get("lastName")) %>, <%= escapeHtml(stu.get("firstName")) %></strong></td>
+                                <td><%= escapeHtml(stu.get("email")) %></td>
+                                <td>
+                                    <%
+                                        List<Map<String, String>> schedules = (studentSchedules != null) ? studentSchedules.get(stu.get("stuId")) : null;
+                                        if (schedules != null && !schedules.isEmpty()) {
+                                            for (Map<String, String> sched : schedules) {
+                                    %>
+                                    <div class="card border border-secondary-subtle mb-2 shadow-sm">
+                                        <div class="card-body p-2" style="font-size: 0.85rem;">
+                                            <div class="d-flex justify-content-between align-items-start border-bottom pb-1 mb-1">
+                                                <strong class="text-primary"><%= escapeHtml(sched.get("courseName")) %></strong>
+                                                <div class="ms-2 flex-shrink-0">
+                                                    <button type="button" class="btn btn-sm btn-link p-0 text-warning me-1" onclick="populateEditStudentCourseModal('<%= escapeJs(sched.get("stuEnId")) %>', '<%= escapeJs(sched.get("courseId")) %>')">
+                                                        <i class="fa-solid fa-pen-to-square"></i>
+                                                    </button>
+                                                    <form action="${pageContext.request.contextPath}/AdminDashboardServlet" method="POST" class="d-inline" onsubmit="return confirm('Remove this class from the student?');">
+                                                        <input type="hidden" name="action" value="deleteStudentCourse">
+                                                        <input type="hidden" name="stuCId" value="<%= escapeHtml(sched.get("stuEnId")) %>">
+                                                        <button type="submit" class="btn btn-sm btn-link p-0 text-danger"><i class="fa-solid fa-trash-can"></i></button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                            <div class="text-dark">
+                                                <div><strong>Day:</strong> <%= escapeHtml(sched.get("classDay")) %></div>
+                                                <div><strong>Instructor:</strong> <%= escapeHtml(sched.get("instLName")) %>, <%= escapeHtml(sched.get("instFName")) %></div>
+                                                <div><strong>Time:</strong> <%= escapeHtml(sched.get("timeStart")) %> - <%= escapeHtml(sched.get("timeEnd")) %></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <%
+                                            }
+                                        } else {
+                                    %>
+                                    <span class="text-muted small fst-italic">Not enrolled in any schedules</span>
+                                    <% } %>
+                                </td>
                                 <td class="text-end">
-                                    <button class="btn btn-light btn-sm text-warning me-1" onclick="populateEditStudentModal('<%= stu.get("stuId") %>', '<%= stu.get("userId") %>', '<%= stu.get("userId") %>', '<%= stu.get("firstName") %>', '<%= stu.get("lastName") %>', '<%= stu.get("email") %>')">
+                                    <button class="btn btn-light btn-sm text-warning me-1" onclick="populateEditStudentModal('<%= escapeJs(stu.get("stuId")) %>', '<%= escapeJs(stu.get("userId")) %>', '<%= escapeJs(stu.get("userId")) %>', '<%= escapeJs(stu.get("firstName")) %>', '<%= escapeJs(stu.get("lastName")) %>', '<%= escapeJs(stu.get("email")) %>')">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
-                                    <form action="AdminDashboardServlet" method="POST" class="d-inline" onsubmit="return confirm('Purge this student profile record? Action logs to audit metrics.');">
+                                    <form action="AdminDashboardServlet" method="POST" class="d-inline" onsubmit="return confirm('Purge this student profile record?\nAction logs to audit metrics.');">
                                         <input type="hidden" name="action" value="deleteStudent">
-                                        <input type="hidden" name="stuId" value="<%= stu.get("stuId") %>">
-                                        <input type="hidden" name="userId" value="<%= stu.get("userId") %>">
+                                        <input type="hidden" name="stuId" value="<%= escapeHtml(stu.get("stuId")) %>">
+                                        <input type="hidden" name="userId" value="<%= escapeHtml(stu.get("userId")) %>">
                                         <button type="submit" class="btn btn-light btn-sm text-danger"><i class="fa-solid fa-trash-can"></i></button>
                                     </form>
                                 </td>
@@ -346,16 +404,16 @@
                         <tbody>
                             <% if (courses != null) { for (Map<String, String> crs : courses) { %>
                             <tr>
-                                <td><span class="badge bg-primary text-uppercase p-2"><%= crs.get("courseCode") %></span></td>
-                                <td><strong><%= crs.get("courseName") %></strong></td>
-                                <td><span class="text-muted"><%= crs.get("courseLength") %> Units/Hours</span></td>
+                                <td><span class="badge bg-primary text-uppercase p-2"><%= escapeHtml(crs.get("courseCode")) %></span></td>
+                                <td><strong><%= escapeHtml(crs.get("courseName")) %></strong></td>
+                                <td><span class="text-muted"><%= escapeHtml(crs.get("courseLength")) %> Units/Hours</span></td>
                                 <td class="text-end">
-                                    <button class="btn btn-light btn-sm text-warning me-1" onclick="populateEditCourseModal('<%= crs.get("courseId") %>', '<%= crs.get("courseCode") %>', '<%= crs.get("courseName") %>', '<%= crs.get("courseLength") %>')">
+                                    <button class="btn btn-light btn-sm text-warning me-1" onclick="populateEditCourseModal('<%= escapeJs(crs.get("courseId")) %>', '<%= escapeJs(crs.get("courseCode")) %>', '<%= escapeJs(crs.get("courseName")) %>', '<%= escapeJs(crs.get("courseLength")) %>')">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
-                                    <form action="AdminDashboardServlet" method="POST" class="d-inline" onsubmit="return confirm('Remove course asset? Related elements might be restricted.');">
+                                    <form action="AdminDashboardServlet" method="POST" class="d-inline" onsubmit="return confirm('Remove course asset?\nRelated elements might be restricted.');">
                                         <input type="hidden" name="action" value="deleteCourse">
-                                        <input type="hidden" name="courseId" value="<%= crs.get("courseId") %>">
+                                        <input type="hidden" name="courseId" value="<%= escapeHtml(crs.get("courseId")) %>">
                                         <button type="submit" class="btn btn-light btn-sm text-danger"><i class="fa-solid fa-trash-can"></i></button>
                                     </form>
                                 </td>
@@ -368,13 +426,41 @@
         </div>
     </div>
 
+    <div class="modal fade" id="modalEditStudentCourse" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form class="modal-content" action="${pageContext.request.contextPath}/AdminDashboardServlet" method="POST">
+                <input type="hidden" name="action" value="editStudentCourse">
+                <input type="hidden" name="stuCId" id="editStuCId">
+
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-book-open-reader me-2"></i>Change Enrolled Class</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Select Available Schedule Matrix Option</label>
+                        <select name="newSchedId" id="editNewSchedId" class="form-select form-select-sm" required>
+                            <option value="" disabled selected>-- Select a slot --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning btn-sm fw-bold">Update Enrollment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="modal fade" id="modalAddInstructor" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <form class="modal-content" action="${pageContext.request.contextPath}/AdminDashboardServlet" method="POST">
                 <input type="hidden" name="action" value="addInstructor">
                 <div class="modal-header bg-dark text-white">
                     <h5 class="modal-title fw-bold"><i class="fa-solid fa-user-plus me-2"></i>Add Faculty Instructor</h5>
-                    <button type="close" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
                     <div class="row g-3">
@@ -385,7 +471,10 @@
                         <div class="col-12"><label class="form-label small fw-bold">Institutional Contact Email</label><input type="email" name="email" class="form-control form-control-sm" required></div>
                     </div>
                 </div>
-                <div class="modal-footer bg-light"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary btn-sm">Save Profile</button></div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Save Profile</button>
+                </div>
             </form>
         </div>
     </div>
@@ -398,7 +487,7 @@
                 <input type="hidden" name="userId" id="editInstUserId">
                 <div class="modal-header bg-warning">
                     <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-user-pen me-2"></i>Modify Instructor Identity</h5>
-                    <button type="close" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
                     <div class="row g-3">
@@ -409,7 +498,10 @@
                         <div class="col-12"><label class="form-label small fw-bold">Email Configuration Address</label><input type="email" name="email" id="editInstEmail" class="form-control form-control-sm" required></div>
                     </div>
                 </div>
-                <div class="modal-footer bg-light"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Dismiss</button><button type="submit" class="btn btn-warning btn-sm fw-bold">Apply Variations</button></div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Dismiss</button>
+                    <button type="submit" class="btn btn-warning btn-sm fw-bold">Apply Variations</button>
+                </div>
             </form>
         </div>
     </div>
@@ -420,7 +512,6 @@
                 <input type="hidden" name="action" id="scheduleActionField" value="assignInstructorSchedule">
                 <input type="hidden" name="schedId" id="scheduleIdField" value="">
                 <input type="hidden" name="instId" id="scheduleInstId">
-
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title fw-bold" id="scheduleModalHeaderTitle"><i class="fa-solid fa-calendar-plus me-2"></i>Configure Course Schedule Node</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -430,7 +521,7 @@
                         <label class="form-label small fw-bold">Target Structural Curriculum Asset</label>
                         <select name="courseId" class="form-select form-select-sm" required>
                             <% if(courses != null) { for(Map<String, String> c : courses) { %>
-                                <option value="<%= c.get("courseId") %>">[<%= c.get("courseCode") %>] <%= c.get("courseName") %></option>
+                            <option value="<%= escapeHtml(c.get("courseId")) %>">[<%= escapeHtml(c.get("courseCode")) %>] <%= escapeHtml(c.get("courseName")) %></option>
                             <% } } %>
                         </select>
                     </div>
@@ -470,14 +561,19 @@
             <div class="modal-content">
                 <div class="modal-header bg-dark text-white">
                     <h5 class="modal-title fw-bold"><i class="fa-solid fa-calendar-days me-2"></i>Weekly Timetable Configuration: <span id="calendarModalInstructorLabel"></span></h5>
-                    <button type="close" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
                     <div class="table-responsive">
                         <table class="table table-bordered align-middle text-center m-0" id="calendarOutputTable">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Monday</th><th>Tuesday</th><th>Wednesday</th><th>Thursday</th><th>Friday</th><th>Saturday</th>
+                                    <th>Monday</th>
+                                    <th>Tuesday</th>
+                                    <th>Wednesday</th>
+                                    <th>Thursday</th>
+                                    <th>Friday</th>
+                                    <th>Saturday</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -502,19 +598,22 @@
             <form class="modal-content" action="${pageContext.request.contextPath}/AdminDashboardServlet" method="POST">
                 <input type="hidden" name="action" value="addStudent">
                 <div class="modal-header bg-dark text-white">
-                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-user-plus me-2"></i>Register New Student</h5>
-                    <button type="close" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-graduation-cap me-2"></i>Register New Matriculated Student</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
                     <div class="row g-3">
-                        <div class="col-6"><label class="form-label small fw-bold">User System Identity Handle</label><input type="text" name="username" class="form-control form-control-sm" required></div>
-                        <div class="col-6"><label class="form-label small fw-bold">Security Password String</label><input type="password" name="password" class="form-control form-control-sm" required></div>
-                        <div class="col-6"><label class="form-label small fw-bold">Given Forename</label><input type="text" name="firstName" class="form-control form-control-sm" required></div>
-                        <div class="col-6"><label class="form-label small fw-bold">Surname</label><input type="text" name="lastName" class="form-control form-control-sm" required></div>
+                        <div class="col-6"><label class="form-label small fw-bold">Login Handles Identification</label><input type="text" name="username" class="form-control form-control-sm" required></div>
+                        <div class="col-6"><label class="form-label small fw-bold">Access Password Sequence</label><input type="password" name="password" class="form-control form-control-sm" required></div>
+                        <div class="col-6"><label class="form-label small fw-bold">First Given Name</label><input type="text" name="firstName" class="form-control form-control-sm" required></div>
+                        <div class="col-6"><label class="form-label small fw-bold">Last Surname Legal</label><input type="text" name="lastName" class="form-control form-control-sm" required></div>
                         <div class="col-12"><label class="form-label small fw-bold">Communication Core Email</label><input type="email" name="email" class="form-control form-control-sm" required></div>
                     </div>
                 </div>
-                <div class="modal-footer bg-light"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary btn-sm">Commit Student Node</button></div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Commit Student Node</button>
+                </div>
             </form>
         </div>
     </div>
@@ -527,7 +626,7 @@
                 <input type="hidden" name="userId" id="editStuUserId">
                 <div class="modal-header bg-warning">
                     <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-user-pen me-2"></i>Modify Student Identity Metrics</h5>
-                    <button type="close" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
                     <div class="row g-3">
@@ -538,7 +637,10 @@
                         <div class="col-12"><label class="form-label small fw-bold">Communication Email Payload</label><input type="email" name="email" id="editStuEmail" class="form-control form-control-sm" required></div>
                     </div>
                 </div>
-                <div class="modal-footer bg-light"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-warning btn-sm fw-bold">Apply Modifications</button></div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning btn-sm fw-bold">Apply Modifications</button>
+                </div>
             </form>
         </div>
     </div>
@@ -549,27 +651,30 @@
                 <input type="hidden" name="action" value="enrollStudent">
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title fw-bold"><i class="fa-solid fa-link me-2"></i>Assign Course Enrollment Node</h5>
-                    <button type="close" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Target Matriculated Student</label>
                         <select name="stuId" class="form-select form-select-sm" required>
                             <% if (students != null) { for(Map<String, String> s : students) { %>
-                                <option value="<%= s.get("stuId") %>"><%= s.get("lastName") %>, <%= s.get("firstName") %> (STU-<%= s.get("stuId") %>)</option>
+                            <option value="<%= escapeHtml(s.get("stuId")) %>"><%= escapeHtml(s.get("lastName")) %>, <%= escapeHtml(s.get("firstName")) %> (STU-<%= escapeHtml(s.get("stuId")) %>)</option>
                             <% } } %>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">Target Academic Schedule Matrix & Course Map</label>
-                        <select name="instCId" class="form-select form-select-sm" required>
+                        <label class="form-label small fw-bold">Target Schedule Class Matcher</label>
+                        <select name="schedId" class="form-select form-select-sm" required>
                             <% if (schedulesList != null) { for(Map<String, String> sch : schedulesList) { %>
-                                <option value="<%= sch.get("instCId") %>">Course: <%= sch.get("courseName") %> | Fac: Prof. <%= sch.get("instructor") %> (<%= sch.get("day") %> : <%= sch.get("start") %>-<%= sch.get("end") %>)</option>
+                            <option value="<%= escapeHtml(sch.get("schedId")) %>"><%= escapeHtml(sch.get("courseName")) %> (<%= escapeHtml(sch.get("day")) %> : <%= escapeHtml(sch.get("start")) %>-<%= escapeHtml(sch.get("end")) %>)</option>
                             <% } } %>
                         </select>
                     </div>
                 </div>
-                <div class="modal-footer bg-light"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary btn-sm">Affiliate Enrollment Roster</button></div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Finalize Enrollment Link</button>
+                </div>
             </form>
         </div>
     </div>
@@ -579,15 +684,27 @@
             <form class="modal-content" action="${pageContext.request.contextPath}/AdminDashboardServlet" method="POST">
                 <input type="hidden" name="action" value="addCourse">
                 <div class="modal-header bg-dark text-white">
-                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-folder-plus me-2"></i>Create Structural Course Catalog Asset</h5>
-                    <button type="close" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-book me-2"></i>Create Syllabus Course Unit</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
-                    <div class="mb-3"><label class="form-label small fw-bold">Course Alpha-Numeric Catalog Identity Code</label><input type="text" name="courseCode" class="form-control form-control-sm" placeholder="e.g., CS-101" required></div>
-                    <div class="mb-3"><label class="form-label small fw-bold">Course Catalog Display Label</label><input type="text" name="courseName" class="form-control form-control-sm" placeholder="e.g., Intro to Computation Foundations" required></div>
-                    <div class="mb-3"><label class="form-label small fw-bold">Magnitude Assessment Metric Weight (Hours/Credits)</label><input type="number" name="courseLength" class="form-control form-control-sm" required></div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Course Unique Code</label>
+                        <input type="text" name="courseCode" class="form-control form-control-sm text-uppercase" placeholder="e.g., CS101" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Display Title Label</label>
+                        <input type="text" name="courseName" class="form-control form-control-sm" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Duration Magnitude (Units / Hours)</label>
+                        <input type="number" name="courseLength" class="form-control form-control-sm" min="1" max="100" required>
+                    </div>
                 </div>
-                <div class="modal-footer bg-light"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary btn-sm">Commit Course Profile</button></div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Commit Course offering</button>
+                </div>
             </form>
         </div>
     </div>
@@ -598,161 +715,139 @@
                 <input type="hidden" name="action" value="editCourse">
                 <input type="hidden" name="courseId" id="editCourseId">
                 <div class="modal-header bg-warning">
-                    <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-gear me-2"></i>Edit Course Schema Configurations</h5>
-                    <button type="close" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title fw-bold text-dark"><i class="fa-solid fa-pen-to-square me-2"></i>Modify Course Definition</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
-                    <div class="mb-3"><label class="form-label small fw-bold">Catalog Index Identifier Code</label><input type="text" name="courseCode" id="editCourseCode" class="form-control form-control-sm" required></div>
-                    <div class="mb-3"><label class="form-label small fw-bold">Course Label Title</label><input type="text" name="courseName" id="editCourseName" class="form-control form-control-sm" required></div>
-                    <div class="mb-3"><label class="form-label small fw-bold">Magnitude Assessment Structural Value Weight</label><input type="number" name="courseLength" id="editCourseLength" class="form-control form-control-sm" required></div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Course Unique Code</label>
+                        <input type="text" name="courseCode" id="editCourseCode" class="form-control form-control-sm text-uppercase" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Display Title Label</label>
+                        <input type="text" name="courseName" id="editCourseName" class="form-control form-control-sm" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Duration Magnitude (Units / Hours)</label>
+                        <input type="number" name="courseLength" id="editCourseLength" class="form-control form-control-sm" min="1" max="100" required>
+                    </div>
                 </div>
-                <div class="modal-footer bg-light"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-warning btn-sm fw-bold">Commit Asset Updates</button></div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning btn-sm fw-bold">Apply System Changes</button>
+                </div>
             </form>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Global maps passed down securely from the request engine context scope
-        const calendarMap = {
-            <% if(instructorCalendars != null) {
-                for(Map.Entry<String, List<Map<String, String>>> entry : instructorCalendars.entrySet()) { %>
-                    "<%= entry.getKey() %>": [
-                        <% for(Map<String, String> appt : entry.getValue()) { %>
+        const globalInstructorCalendars = {
+            <% if (instructorCalendars != null) {
+                for (Map.Entry<String, List<Map<String, String>>> entry : instructorCalendars.entrySet()) { %>
+                    "<%= escapeJs(entry.getKey()) %>": [
+                        <% for (Map<String, String> s : entry.getValue()) { %>
                             {
-                                schedId: "<%= appt.get("schedId") %>",
-                                instCId: "<%= appt.get("instCId") %>",
-                                courseId: "<%= appt.get("courseId") %>",
-                                code: "<%= appt.get("code") %>",
-                                day: "<%= appt.get("day") %>",
-                                start: "<%= appt.get("start") %>",
-                                end: "<%= appt.get("end") %>"
+                                courseCode: "<%= escapeJs(s.get("courseCode")) %>",
+                                courseName: "<%= escapeJs(s.get("courseName")) %>",
+                                classDay: "<%= escapeJs(s.get("classDay")) %>",
+                                timeStart: "<%= escapeJs(s.get("timeStart")) %>",
+                                timeEnd: "<%= escapeJs(s.get("timeEnd")) %>"
+                            },
+                        <% } %>
+                    ],
+            <% } } %>
+        };
+        
+        // Global registries containing server state safely escaped against rendering syntax exceptions
+        const globalCourseSchedules = {
+            <% if (schedulesList != null) {
+                // Java 1.5 Compliant: Explicitly specify types on both sides (No diamond operator)
+                Map<String, List<Map<String, String>>> groupedScheds = new HashMap<String, List<Map<String, String>>>();
+                for (Map<String, String> sch : schedulesList) {
+                    String cId = sch.get("courseId");
+                    if (cId != null) {
+                        // Java 1.5 Compliant: Classic lookups instead of lambda .computeIfAbsent()
+                        List<Map<String, String>> existingList = groupedScheds.get(cId);
+                        if (existingList == null) {
+                            existingList = new ArrayList<Map<String, String>>();
+                            groupedScheds.put(cId, existingList);
+                        }
+                        existingList.add(sch);
+                    }
+                }
+                
+                for (Map.Entry<String, List<Map<String, String>>> entry : groupedScheds.entrySet()) { %>
+                    "<%= escapeJs(entry.getKey()) %>": [
+                        <% for (Map<String, String> s : entry.getValue()) { %>
+                            {
+                                schedId: "<%= escapeJs(s.get("schedId")) %>",
+                                courseName: "<%= escapeJs(s.get("courseName")) %>",
+                                // Compatibility fallback keys matching both selection criteria styles
+                                day: "<%= escapeJs(s.get("DAY_OF_WEEK") != null ? s.get("DAY_OF_WEEK") : (s.get("classDay") != null ? s.get("classDay") : s.get("day"))) %>",
+                                start: "<%= escapeJs(s.get("TIME_START") != null ? s.get("TIME_START") : (s.get("timeStart") != null ? s.get("timeStart") : s.get("start"))) %>",
+                                end: "<%= escapeJs(s.get("TIME_END") != null ? s.get("TIME_END") : (s.get("timeEnd") != null ? s.get("timeEnd") : s.get("end"))) %>"
                             },
                         <% } %>
                     ],
             <% } } %>
         };
 
-        function openScheduleModal(instId) {
-            document.getElementById('scheduleInstId').value = instId;
-            // Reset modal behavior to default assignment route
-            document.getElementById('modalAssignScheduleForm').action = "${pageContext.request.contextPath}/AdminDashboardServlet";
-            document.getElementById('scheduleActionField').value = "assignInstructorSchedule";
-            document.getElementById('scheduleIdField').value = "";
-            document.getElementById('scheduleModalHeaderTitle').innerText = "Configure Course Schedule Node";
+        function switchDashboardTab(panelId) {
+            document.querySelectorAll('.tab-panel-view').forEach(panel => panel.classList.remove('active-panel'));
+            document.querySelectorAll('.sidebar-menu-item').forEach(link => link.classList.remove('active-tab'));
+            const targetPanel = document.getElementById(panelId);
+            if(targetPanel) targetPanel.classList.add('active-panel');
 
-            new bootstrap.Modal(document.getElementById('modalAssignSchedule')).show();
-        }
-
-        function openCalendarModal(instId, lastName) {
-            document.getElementById('calendarModalInstructorLabel').innerText = "Professor " + lastName;
-
-            const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
-            days.forEach(d => {
-                const cell = document.getElementById('cal-day-' + d.charAt(0) + d.slice(1).toLowerCase());
-                if (cell) cell.innerHTML = '<span class="text-muted small"><em>Vacant Matrix Node</em></span>';
-            });
-
-            if (calendarMap[instId]) {
-                calendarMap[instId].forEach(appt => {
-                    const dayFormatted = appt.day.charAt(0) + appt.day.slice(1).toLowerCase();
-                    const cell = document.getElementById('cal-day-' + dayFormatted);
-                    if (cell) {
-                        // Formatting times for aesthetic display parameters
-                        const cleanStart = appt.start.substring(0, 5);
-                        const cleanEnd = appt.end ? appt.end.substring(0, 5) : '??:??';
-
-                        // NEAT & FIXED UI: Clean vertical card separation with action buttons grouped at the bottom
-                        const cardHtml = `
-                            <div class="card shadow-sm border-0 mb-3 text-start overflow-hidden" style="border-left: 4px solid #3b82f6 !important;">
-                                <div class="card-body p-2 bg-white">
-                                    <div class="text-dark fw-bold mb-1" style="font-size: 13px;">\${appt.code}</div>
-                                    <div class="text-muted mb-2" style="font-size: 11px;">
-                                        <i class="fa-regular fa-clock me-1"></i>\${cleanStart} - \${cleanEnd}
-                                    </div>
-                                    <div class="d-flex justify-content-between align-items-center pt-2 border-top" style="font-size: 11px;">
-                                        <a href="#" class="text-warning text-decoration-none fw-semibold" 
-                                           onclick="populateEditSchedule('\${instId}', '\${appt.schedId}', '\${appt.courseId}', '\${appt.day}', '\${appt.start}', '\${appt.end}')">
-                                            <i class="fa-solid fa-pen me-1"></i>Edit
-                                        </a>
-                                        <a href="#" class="text-danger text-decoration-none fw-semibold" 
-                                           onclick="triggerDeleteSchedule('\${appt.schedId}')">
-                                            <i class="fa-solid fa-trash me-1"></i>Delete
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>`;
-
-                        if (cell.innerHTML.includes('Vacant Matrix Node')) {
-                            cell.innerHTML = cardHtml;
-                        } else {
-                            cell.innerHTML += cardHtml;
-                        }
-                    }
-                });
-            }
-            new bootstrap.Modal(document.getElementById('modalViewCalendar')).show();
-        }
-
-        function populateEditSchedule(instId, schedId, courseId, day, start, end) {
-            // Close calendar overlay modal view context
-            bootstrap.Modal.getInstance(document.getElementById('modalViewCalendar')).hide();
-
-            document.getElementById('scheduleInstId').value = instId;
-            document.getElementById('scheduleIdField').value = schedId;
-            document.getElementById('scheduleActionField').value = "editInstructorSchedule";
-            document.getElementById('scheduleModalHeaderTitle').innerText = "Modify Timetable Matrix Slot";
-
-            const form = document.getElementById('modalAssignScheduleForm');
-            form.querySelector('select[name="courseId"]').value = courseId;
-
-            // Ensure capitalization format alignment matches the option element nodes
-            const normalizedDay = day.charAt(0).toUpperCase() + day.slice(1).toLowerCase();
-            form.querySelector('select[name="dayOfWeek"]').value = normalizedDay;
-
-            form.querySelector('input[name="timeStart"]').value = start.substring(0, 5);
-            form.querySelector('input[name="timeEnd"]').value = end.substring(0, 5);
-
-            new bootstrap.Modal(document.getElementById('modalAssignSchedule')).show();
-        }
-
-        function triggerDeleteSchedule(schedId) {
-            if (confirm("Are you sure you want to completely drop this timeframe schedule profile unit entry?")) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '${pageContext.request.contextPath}/AdminDashboardServlet';
-
-                const actionInput = document.createElement('input');
-                actionInput.type = 'hidden';
-                actionInput.name = 'action';
-                actionInput.value = 'deleteInstructorSchedule';
-
-                const idInput = document.createElement('input');
-                idInput.type = 'hidden';
-                idInput.name = 'schedId';
-                idInput.value = schedId;
-
-                form.appendChild(actionInput);
-                form.appendChild(idInput);
-                document.body.appendChild(form);
-                form.submit();
-            }
-        }
-
-        function switchDashboardTab(activeTabId) {
-            document.querySelectorAll('.tab-panel-view').forEach(p => p.classList.remove('active-panel'));
-            document.querySelectorAll('.sidebar-menu-item').forEach(l => l.classList.remove('active-tab'));
-            
-            document.getElementById(activeTabId).classList.add('active-panel');
-            
-            const mapping = {
+            const tabMap = {
                 'panel-overview': 'link-overview',
                 'panel-instructors': 'link-instructors',
                 'panel-students': 'link-students',
                 'panel-courses': 'link-courses'
             };
-            document.getElementById(mapping[activeTabId]).classList.add('active-tab');
+            const targetTab = document.getElementById(tabMap[panelId]);
+            if (targetTab) targetTab.classList.add('active-tab');
+        }
+
+        function openScheduleModal(instructorId) {
+            document.getElementById('scheduleInstId').value = instructorId;
+            document.getElementById('scheduleActionField').value = "assignInstructorSchedule";
+            document.getElementById('scheduleIdField').value = "";
+            document.getElementById('scheduleModalHeaderTitle').innerHTML = '<i class="fa-solid fa-calendar-plus me-2"></i>Configure Course Schedule Node';
+            new bootstrap.Modal(document.getElementById('modalAssignSchedule')).show();
+        }
+
+        function openCalendarModal(instructorId, instructorName) {
+            document.getElementById('calendarModalInstructorLabel').innerText = instructorName;
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            days.forEach(d => {
+                const td = document.getElementById('cal-day-' + d);
+                if (td) {
+                    td.innerHTML = '<em>Vacant Matrix Node</em>';
+                    td.className = 'small p-3 text-muted';
+                }
+            });
+            const userScheds = globalInstructorCalendars[instructorId] || [];
+            userScheds.forEach(s => {
+                if (!s.classDay) return;
+                const normalizedDay = s.classDay.charAt(0).toUpperCase() + s.classDay.slice(1).toLowerCase();
+                const targetTd = document.getElementById('cal-day-' + normalizedDay);
+                if (targetTd) {
+                    if (targetTd.innerHTML.includes('Vacant Matrix Node')) {
+                        targetTd.innerHTML = '';
+                        targetTd.className = 'small p-2';
+                    }
+
+                    targetTd.innerHTML +=
+                        '<div class="p-2 mb-2 bg-primary-subtle text-primary rounded-2 border border-primary-subtle text-start">' +
+                            '<div class="fw-bold text-uppercase" style="font-size:0.75rem;">' + s.courseCode + '</div>' +
+                            '<div class="small fw-semibold text-truncate" style="max-width:130px;">' + s.courseName + '</div>' +
+                            '<div class="text-muted" style="font-size:0.7rem;">' +
+                                '<i class="fa-regular fa-clock me-1"></i>' + s.timeStart + ' - ' + s.timeEnd +
+                            '</div>' +
+                        '</div>';
+                }
+            });
+            new bootstrap.Modal(document.getElementById('modalViewCalendar')).show();
         }
 
         function populateEditInstructorModal(instId, uId, username, fName, lName, email) {
@@ -782,6 +877,32 @@
             document.getElementById('editCourseLength').value = cLen;
             new bootstrap.Modal(document.getElementById('modalEditCourse')).show();
         }
+
+        function populateEditStudentCourseModal(stuCId, currentCourseId) {
+            document.getElementById('editStuCId').value = stuCId;
+            const selectDropdown = document.getElementById('editNewSchedId');
+            if (!selectDropdown) return;
+
+            selectDropdown.innerHTML = '';
+            const targetedSchedules = globalCourseSchedules[currentCourseId] || [];
+            if (targetedSchedules.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = "";
+                opt.disabled = true;
+                opt.selected = true;
+                opt.innerText = "-- No alternative schedules configured for this course --";
+                selectDropdown.appendChild(opt);
+            } else {
+                targetedSchedules.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.schedId;
+                    opt.innerText = s.courseName + " (" + s.day + " : " + s.start + " - " + s.end + ")";
+                    selectDropdown.appendChild(opt);
+                });
+            }
+            new bootstrap.Modal(document.getElementById('modalEditStudentCourse')).show();
+        }
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
