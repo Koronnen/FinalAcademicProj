@@ -23,8 +23,6 @@
         studentLname = profileMap.get("lastName") != null ? profileMap.get("lastName") : "";
         studentEmail = profileMap.get("email") != null ? profileMap.get("email") : "";
     }
-    
-    String firstInitial = (!studentFname.isEmpty()) ? studentFname.substring(0,1).toUpperCase() : "S";
 
     List<Map<String, String>> enrolledCourses = (List<Map<String, String>>) request.getAttribute("enrolledCourses");
     List<Map<String, Object>> availableCourses = (List<Map<String, Object>>) request.getAttribute("availableCourses");
@@ -39,10 +37,10 @@
     <style>
         :root {
             --sidebar-width: 260px;
-            --primary-color: #1e293b;     /* Slate Blue from Admin Dashboard */
-            --secondary-color: #0f172a;   /* Dark Slate from Admin Dashboard */
-            --accent-blue: #3b82f6;        /* Royal Blue accent highlight */
-            --light-bg: #f8fafc;          /* Soft Light background */
+            --primary-color: #1e293b;      /* Slate Blue brand matching Admin Dashboard template */
+            --secondary-color: #0f172a;    /* Dark Slate modifier */
+            --accent-blue: #3b82f6;        /* Vibrant blue highlight border metric */
+            --light-bg: #f8fafc;           /* Soft light slate structural background */
         }
         body {
             background-color: var(--light-bg);
@@ -71,7 +69,7 @@
         .sidebar-menu-item {
             padding: 0.9rem 1.5rem;
             display: block;
-            color: #94a3b8;               
+            color: #94a3b8;                /* Slate muted link color */
             text-decoration: none;
             font-weight: 500;
             transition: all 0.2s ease;
@@ -108,6 +106,14 @@
             padding: 1.5rem;
             margin-bottom: 2rem;
         }
+        .table classical-thead th {
+            background-color: #f1f5f9;    /* Muted grey-blue background */
+            color: #475569;                /* Slate header text color */
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
         .tab-panel-view {
             display: none;
         }
@@ -115,22 +121,14 @@
             display: block;
             animation: fadeIn 0.4s ease-in-out;
         }
-        .profile-avatar-circle {
-            width: 70px;
-            height: 70px;
-            background-color: #e2e8f0;
-            color: #334155;
-            font-size: 24px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            margin-bottom: 1rem;
-        }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+        .profile-text-display {
+            background-color: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
         }
     </style>
 </head>
@@ -172,7 +170,7 @@
             <div class="card card-table-container">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle m-0">
-                        <thead class="table-light">
+                        <thead class="table-light classical-thead">
                             <tr>
                                 <th>Course Index</th>
                                 <th>Course Name</th>
@@ -183,7 +181,7 @@
                             <% if (enrolledCourses != null && !enrolledCourses.isEmpty()) { 
                                 for (Map<String, String> course : enrolledCourses) { %>
                                 <tr>
-                                    <td><span class="badge bg-success text-uppercase px-2 py-1"><%= course.get("courseCode") %></span></td>
+                                    <td><span class="badge bg-primary text-uppercase px-2 py-1"><%= course.get("courseCode") %></span></td>
                                     <td><strong><%= course.get("courseName") %></strong></td>
                                     <td><i class="fa-regular fa-clock me-1 text-muted"></i><%= course.get("timeDetails") %></td>
                                 </tr>
@@ -202,27 +200,29 @@
             <h5 class="fw-bold text-dark mb-3">Manage Personal Profile Information</h5>
             
             <div class="row g-4">
-                <div class="col-lg-4">
-                    <div class="card card-table-container shadow-sm text-center d-flex flex-column align-items-center">
-                        <div class="profile-avatar-circle">
-                            <%= firstInitial %>
-                        </div>
-                        <h5 class="fw-bold text-dark mb-1">
-                            <%= (!studentFname.isEmpty() || !studentLname.isEmpty()) ? (studentFname + " " + studentLname) : "Student Account" %>
-                        </h5>
-                        <p class="text-muted small mb-3">Institutional Learner Profile</p>
-                        <hr class="w-100 my-2" style="border-top: 1px dashed #cbd5e1;">
-                        <div class="w-100 text-start mt-2">
-                            <span class="d-block text-muted small fw-bold text-uppercase" style="font-size: 11px; letter-spacing: 0.5px;">Registered Identity Email</span>
-                            <span class="text-dark fw-semibold" style="word-break: break-all;"><%= !studentEmail.isEmpty() ? studentEmail : "unspecified_address" %></span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-lg-8">
+                <div class="col-lg-12">
                     <div class="card card-table-container shadow-sm">
+                        
+                        <div class="profile-text-display p-4 mb-4">
+                            <h6 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-id-card me-2 text-primary"></i>Current Account Profile Overview</h6>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <span class="text-muted small d-block uppercase fw-semibold">First Name</span>
+                                    <span class="fs-6 fw-bold text-dark"><%= studentFname.isEmpty() ? "—" : studentFname %></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <span class="text-muted small d-block uppercase fw-semibold">Last Name</span>
+                                    <span class="fs-6 fw-bold text-dark"><%= studentLname.isEmpty() ? "—" : studentLname %></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <span class="text-muted small d-block uppercase fw-semibold">Email Address</span>
+                                    <span class="fs-6 fw-bold text-dark"><%= studentEmail.isEmpty() ? "—" : studentEmail %></span>
+                                </div>
+                            </div>
+                        </div>
                         <form action="${pageContext.request.contextPath}/StudentServlet" method="POST">
                             <input type="hidden" name="action" value="updateProfile">
+                            <h6 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-pen-to-square me-2"></i>Modify Properties</h6>
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label small fw-bold">First Name</label>
@@ -241,7 +241,9 @@
                                             onclick="if(confirm('Clear optional fields?')) { document.getElementById('clearProfileForm').submit(); }">
                                         <i class="fa-solid fa-trash-can me-1"></i> Clear Profile Properties
                                     </button>
-                                    <button type="submit" class="btn btn-success px-4"><i class="fa-solid fa-floppy-disk me-2"></i>Save Account Changes</button>
+                                    <button type="submit" class="btn btn-primary px-4" style="background-color: var(--primary-color); border-color: var(--primary-color);">
+                                        <i class="fa-solid fa-floppy-disk me-2"></i>Save Account Changes
+                                    </button>
                                 </div>
                             </div>
                         </form>
@@ -260,7 +262,7 @@
             <div class="card card-table-container">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle m-0">
-                        <thead class="table-light">
+                        <thead class="table-light classical-thead">
                             <tr>
                                 <th>Course Reference</th>
                                 <th>Curriculum Topic Title</th>
@@ -275,7 +277,7 @@
                                     List<Map<String, String>> schedulesList = (List<Map<String, String>>) course.get("schedulesList");
                             %>
                                 <tr>
-                                    <td><span class="badge bg-secondary text-uppercase"><%= course.get("courseCode") %></span></td>
+                                    <td><span class="badge text-uppercase" style="background-color: var(--primary-color); color: #ffffff;"><%= course.get("courseCode") %></span></td>
                                     <td><strong><%= course.get("courseName") %></strong></td>
                                     <td><span class="text-muted small fw-semibold"><%= course.get("instructorName") %></span></td>
                                     
@@ -293,7 +295,7 @@
                                             </select>
                                         </td>
                                         <td class="text-end">
-                                            <button type="submit" class="btn btn-sm btn-outline-success px-3">
+                                            <button type="submit" class="btn btn-sm btn-outline-primary px-3">
                                                 <i class="fa-solid fa-plus me-1"></i> Enroll Course
                                             </button>
                                         </td>
@@ -312,7 +314,7 @@
 
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bundle.min.js"></script>
     <script>
         // Use localStorage to remember which panel was active across form submissions and redirects
         document.addEventListener("DOMContentLoaded", function() {

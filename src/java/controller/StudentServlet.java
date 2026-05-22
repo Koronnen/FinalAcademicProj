@@ -193,9 +193,12 @@ public class StudentServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        
+
+        // 1. Get the session if it exists
         HttpSession session = request.getSession(false);
-        if (session == null || !"STUDENT".equalsIgnoreCase((String) session.getAttribute("USER_ROLE"))) {
+
+        // 2. Fixed: Now consistently checks for USER_ID instead of USER_ROLE
+        if (session == null || session.getAttribute("USER_ID") == null) {
             response.sendRedirect("index.jsp");
             return;
         }
@@ -204,7 +207,7 @@ public class StudentServlet extends HttpServlet {
         String action = request.getParameter("action");
 
         try (Connection sqlConn = getMySQLConnection()) {
-            
+
             String stuId = "";
             String authorID = "";
             String findStudentSql = "SELECT STU_ID FROM STUDENT WHERE USER_ID = ?";
@@ -247,10 +250,10 @@ public class StudentServlet extends HttpServlet {
             }
             else if ("enrollCourse".equals(action)) {
                 String instCourseId = request.getParameter("instCourseId");
-                
+
                 if (!stuId.isEmpty() && instCourseId != null && !instCourseId.isEmpty()) {
                     String enrollmentId = UUID.randomUUID().toString().substring(0, 9).toUpperCase();
-                    
+
                     String enrollSql = "INSERT INTO ENROLLMENT (STU_EN_ID, STU_ID, INST_C_ID) VALUES (?, ?, ?)";
                     try (PreparedStatement ps = sqlConn.prepareStatement(enrollSql)) {
                         ps.setString(1, enrollmentId);
@@ -265,6 +268,7 @@ public class StudentServlet extends HttpServlet {
             e.printStackTrace();
         }
 
+        // Redirects seamlessly back to the doGet to re-render the page with new data
         response.sendRedirect(request.getContextPath() + "/StudentServlet");
     }
     
