@@ -25,7 +25,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import org.json.JSONObject;
 
-public class signUpServlet extends HttpServlet {
+public class SignUpServlet extends HttpServlet {
 
     private Connection derbyConn;
     private Connection mysqlConn;
@@ -93,7 +93,7 @@ public class signUpServlet extends HttpServlet {
         
         if (email == null || email.trim().isEmpty() || rawPass == null || rawPass.trim().isEmpty()) {
             s.setAttribute("noInput", "Please enter your email and password.");
-            response.sendRedirect("signUp.jsp");
+            response.sendRedirect(request.getContextPath() + "/signUp.jsp");
             return;
         }
 
@@ -102,20 +102,20 @@ public class signUpServlet extends HttpServlet {
 
         if (gRecaptchaResponse == null || gRecaptchaResponse.isEmpty()) {
             s.setAttribute("captchaError", "Please complete the CAPTCHA.");
-            response.sendRedirect("signUp.jsp"); 
+            response.sendRedirect(request.getContextPath() + "/signUp.jsp"); 
             return; 
         }
         
         if (!rawPass.equals(confirmPass)) {
             s.setAttribute("incorrectPass", "Password does not match.");
-            response.sendRedirect("signUp.jsp");
+            response.sendRedirect(request.getContextPath() + "/signUp.jsp");
             return;
         }
         
         boolean isValid = verifyCaptcha(gRecaptchaResponse);
         if (!isValid) {
             s.setAttribute("captchaError", "CAPTCHA verification failed. Try again.");
-            response.sendRedirect("signUp.jsp");
+            response.sendRedirect(request.getContextPath() + "/signUp.jsp");
             return;
         }
 
@@ -131,16 +131,16 @@ public class signUpServlet extends HttpServlet {
                 s.setAttribute("successMessage", "Registered successfully!");
                 logAction("Created User: " + LOG, authorId);
                 logAction("Created Student Profile: " + STU, authorId);
-                response.sendRedirect("index.jsp");
+                response.sendRedirect(request.getContextPath() + "/index.jsp");
             } else {
                 s.setAttribute("captchaError", "Registration failed during database synchronization.");
                 logAction("FAILED REGISTRATION ATTEMPT: Sync Error for email " + email, authorId);
-                response.sendRedirect("signUp.jsp");
+                response.sendRedirect(request.getContextPath() + "/signUp.jsp");
             }
         } else {
             s.setAttribute("loginError", "An account with that email already exists.");
             logAction("REJECTED REGISTRATION: Duplicate email hit (" + email + ")", authorId);
-            response.sendRedirect("signUp.jsp");
+            response.sendRedirect(request.getContextPath() + "/signUp.jsp");
         }
     }
 

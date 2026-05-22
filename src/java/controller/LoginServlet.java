@@ -13,12 +13,17 @@ import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -57,6 +62,19 @@ public class LoginServlet extends HttpServlet {
                     + nfe.getMessage());
             }
     }
+    
+    private Connection getPostgresConnection() throws SQLException, ClassNotFoundException {
+        String driver = getServletContext().getInitParameter("postgres.jdbcClassName");
+        String url = getServletContext().getInitParameter("postgres.jdbcDriverURL") + "://" +
+                     getServletContext().getInitParameter("postgres.dbHostName") + ":" +
+                     getServletContext().getInitParameter("postgres.dbPort") + "/" +
+                     getServletContext().getInitParameter("postgres.databaseName");
+        String user = getServletContext().getInitParameter("postgres.dbUserName");
+        String pass = getServletContext().getInitParameter("postgres.dbPassword");
+
+        Class.forName(driver);
+        return DriverManager.getConnection(url, user, pass);
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -73,7 +91,7 @@ public class LoginServlet extends HttpServlet {
         if (gRecaptchaResponse == null || gRecaptchaResponse.isEmpty()) {
             s.setAttribute("loginError", "Please complete the CAPTCHA.");
             System.out.println("Invalid captcha");
-            response.sendRedirect("index.jsp"); 
+            response.sendRedirect(request.getContextPath() + "/index.jsp"); 
             return; 
         }
         
@@ -95,6 +113,13 @@ public class LoginServlet extends HttpServlet {
                 System.out.println(email);
                 System.out.println(id);
                 System.out.println(userType);
+                
+                String userDisplay;
+                if (userType == 1) { userDisplay = "ADMIN";
+                } else if (userType == 2) { userDisplay = "STUDENT";
+                } else { userDisplay = "INSTRUCTOR";}
+                
+                logAction("User successfully logged into the system as " + userDisplay + ".", id);
                 switch (userType) {
                     case 1:
                         System.out.println("reached trying to get tot admin");
@@ -113,14 +138,14 @@ public class LoginServlet extends HttpServlet {
             } else {
                 // ADDED: Handle INVALID CREDENTIALS
                 s.setAttribute("loginError", "Invalid email or password.");
-                response.sendRedirect("index.jsp");
+                response.sendRedirect(request.getContextPath() + "/index.jsp");
                 return;
             }
         } else {
             // ADDED: Set error message for bad captcha
             s.setAttribute("loginError", "CAPTCHA verification failed. Please try again.");
             System.out.println("Bad Captcha");
-            response.sendRedirect("index.jsp");
+            response.sendRedirect(request.getContextPath() + "/index.jsp");
         }
     }
     
@@ -194,6 +219,23 @@ public class LoginServlet extends HttpServlet {
         }catch (SQLException sqle){sqle.printStackTrace();}
         return id;
     }
+    
+    private void logAction(String actionMade, String authorId) {
+        String insertLogSQL = "INSERT INTO LOG (LOG_ID, ACTION_MADE, AUTHOR, LOG_DATE, LOG_TIME) VALUES (?, ?, ?, ?, ?)";
+        try (Connection pgConn = getPostgresConnection();
+             PreparedStatement pstmt = pgConn.prepareStatement(insertLogSQL)) {
+            String logId = UUID.randomUUID().toString().substring(0, 9);
+            pstmt.setString(1, logId);
+            pstmt.setString(2, actionMade);
+            pstmt.setString(3, authorId);
+            pstmt.setDate(4, Date.valueOf(LocalDate.now()));
+            pstmt.setTime(5, Time.valueOf(LocalTime.now()));
+            pstmt.executeUpdate();
+        } catch (Exception e) {
+            System.err.println("PostgreSQL Telemetry Log Drop: " + e.getMessage());
+        }
+    }
+    
     @Override
     public String getServletInfo() {
         return "Short description";

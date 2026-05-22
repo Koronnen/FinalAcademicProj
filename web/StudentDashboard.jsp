@@ -5,6 +5,12 @@
     response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     response.setHeader("Pragma", "no-cache");
     response.setDateHeader("Expires", 0);
+    
+    HttpSession activeSession = request.getSession(false);
+    if (activeSession == null || activeSession.getAttribute("USER_ID") == null) {
+        activeSession.setAttribute("loginError", "Access denied. Please log-in again.");
+        return;
+    }
 
     String displayName = (String) request.getAttribute("displayName");
     if (displayName == null || displayName.trim().isEmpty()) {
@@ -67,22 +73,25 @@
         .sidebar-menu-item {
             padding: 0.9rem 1.5rem;
             display: block;
-            color: #94a3b8;                /* Slate muted link color */
+            color: #94a3b8;
             text-decoration: none;
             font-weight: 500;
             transition: all 0.2s ease;
             border-left: 4px solid transparent;
             cursor: pointer;
         }
+
         .sidebar-menu-item:hover, .sidebar-menu-item.active-tab {
             color: #ffffff;
             background-color: var(--secondary-color);
             border-left-color: var(--accent-blue);
         }
+
         .sidebar-menu-item i {
             margin-right: 12px;
             width: 20px;
             text-align: center;
+
         }
         #page-content-wrapper {
             margin-left: var(--sidebar-width);
@@ -146,6 +155,10 @@
             <div class="sidebar-menu-item" id="link-enrollment" onclick="switchDashboardTab('panel-enrollment')">
                 <i class="fa-solid fa-book-medical"></i>Course Enrollment
             </div>
+            <hr class="text-white-50 my-2">
+            <a href="${pageContext.request.contextPath}/LogOutServlet" class="sidebar-menu-item text-decoration-none d-block text-danger border-0 bg-transparent mt-2" >
+            <i class="fa-solid fa-right-from-bracket me-3 text-danger"></i> Log Out Account
+            </a>
         </div>
     </div>
 

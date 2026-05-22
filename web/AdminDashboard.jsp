@@ -280,7 +280,7 @@
                                     <button class="btn btn-light btn-sm text-warning me-1" onclick="populateEditInstructorModal('<%= escapeJs(inst.get("instId")) %>', '<%= escapeJs(inst.get("userId")) %>', '<%= escapeJs(inst.get("userId")) %>', '<%= escapeJs(inst.get("firstName")) %>', '<%= escapeJs(inst.get("lastName")) %>', '<%= escapeJs(inst.get("email")) %>')">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
-                                    <form action="AdminDashboardServlet" method="POST" class="d-inline" onsubmit="return confirm('Delete this instructor?\nThis clears authentication details too.');">
+                                    <form action="${pageContext.request.contextPath}/AdminDashboardServlet" method="POST" class="d-inline" onsubmit="return confirm('Delete this instructor?\nThis clears authentication details too.');">
                                         <input type="hidden" name="action" value="deleteInstructor">
                                         <input type="hidden" name="instId" value="<%= escapeHtml(inst.get("instId")) %>">
                                         <input type="hidden" name="userId" value="<%= escapeHtml(inst.get("userId")) %>">
@@ -367,7 +367,7 @@
                                     <button class="btn btn-light btn-sm text-warning me-1" onclick="populateEditStudentModal('<%= escapeJs(stu.get("stuId")) %>', '<%= escapeJs(stu.get("userId")) %>', '<%= escapeJs(stu.get("userId")) %>', '<%= escapeJs(stu.get("firstName")) %>', '<%= escapeJs(stu.get("lastName")) %>', '<%= escapeJs(stu.get("email")) %>')">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
-                                    <form action="AdminDashboardServlet" method="POST" class="d-inline" onsubmit="return confirm('Purge this student profile record?\nAction logs to audit metrics.');">
+                                    <form action="${pageContext.request.contextPath}/AdminDashboardServlet" method="POST" class="d-inline" onsubmit="return confirm('Purge this student profile record?\nAction logs to audit metrics.');">
                                         <input type="hidden" name="action" value="deleteStudent">
                                         <input type="hidden" name="stuId" value="<%= escapeHtml(stu.get("stuId")) %>">
                                         <input type="hidden" name="userId" value="<%= escapeHtml(stu.get("userId")) %>">
