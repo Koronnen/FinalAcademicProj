@@ -27,6 +27,17 @@
                     session.removeAttribute("loginError"); 
                 } 
             %>
+            <% 
+                String successMessage = (String) session.getAttribute("successMessage");
+                if (successMessage != null) { 
+            %>
+                <div class="success-message">
+                    <%= successMessage %>
+                </div>
+            <% 
+                    session.removeAttribute("successMessage"); 
+                } 
+            %>
             
             <form id="loginForm" onsubmit="handleLogin(event)" action="${pageContext.request.contextPath}/loginServlet" method="POST">
                 <div class="input-group">
