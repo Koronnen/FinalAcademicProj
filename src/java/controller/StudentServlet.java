@@ -251,18 +251,21 @@ public class StudentServlet extends HttpServlet {
             }
             else if ("enrollCourse".equals(action)) {
                 String instCourseId = request.getParameter("instCourseId");
+                String schedId = request.getParameter("schedId"); // <--- Extract the new parameter sent by the JSP
 
                 if (!stuId.isEmpty() && instCourseId != null && !instCourseId.isEmpty()) {
                     String enrollmentId = generateNextCustomID(sqlConn, "ENROLLMENT", "STU_EN_ID", "ENR");
 
-                    String enrollSql = "INSERT INTO ENROLLMENT (STU_EN_ID, STU_ID, INST_C_ID) VALUES (?, ?, ?)";
+                    // Include SCHED_ID in your database insertion query
+                    String enrollSql = "INSERT INTO ENROLLMENT (STU_EN_ID, STU_ID, INST_C_ID, SCHED_ID) VALUES (?, ?, ?, ?)";
                     try (PreparedStatement ps = sqlConn.prepareStatement(enrollSql)) {
                         ps.setString(1, enrollmentId);
                         ps.setString(2, stuId);
                         ps.setString(3, instCourseId);
+                        ps.setString(4, schedId); // <--- Bind the selected timetable option to the statement
                         ps.executeUpdate();
                     }
-                    logAction(authorID + " Successfully Enrolled to " + instCourseId, authorID);                    
+                    logAction(authorID + " Successfully Enrolled to Course Unit " + instCourseId + " Slot " + schedId, authorID);                    
                 }
             }
         } catch (Exception e) {
