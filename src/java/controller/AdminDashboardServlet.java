@@ -121,7 +121,7 @@ public class AdminDashboardServlet extends HttpServlet {
         // ADDED HERE: Verify login status via USER_ID session token
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("USER_ID") == null) {
-            response.sendRedirect("index.jsp");
+            response.sendRedirect(request.getContextPath() + "/index.jsp");
             return;
         }
 
