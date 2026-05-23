@@ -413,6 +413,21 @@ public class AdminDashboardServlet extends HttpServlet {
                         ps.setString(1, uId);
                         ps.executeUpdate();
                     }
+                    
+                    // DELETS THE INSTRUCTOR FROM THE USER TABLE IN DERBY
+                    try (Connection derbyConn = getDerbyConnection()) {
+                        derbyConn.setAutoCommit(false);
+                        try (PreparedStatement psDerby = derbyConn.prepareStatement(uSql)) {
+                            psDerby.setString(1, uId);
+                            psDerby.executeUpdate();
+                        }
+                        derbyConn.commit();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        System.err.println("Derby Instructor-User Purge Failed: " + e.getMessage());
+                        throw new SQLException("Derby sync failure on delete, rolling back MySQL.", e);
+                    }
+                    
                     conn.commit();
                     logAction("Purged Instructor Profile Node: " + instId, authorId);
                     break;
@@ -640,6 +655,19 @@ public class AdminDashboardServlet extends HttpServlet {
                     try (PreparedStatement ps = conn.prepareStatement(uSql)) {
                         ps.setString(1, uId);
                         ps.executeUpdate();
+                    }
+                    // DELETES STUDENT FROM USERS TABLE IN DERBY
+                    try (Connection derbyConn = getDerbyConnection()) {
+                        derbyConn.setAutoCommit(false);
+                        try (PreparedStatement psDerby = derbyConn.prepareStatement(uSql)) {
+                            psDerby.setString(1, uId);
+                            psDerby.executeUpdate();
+                        }
+                        derbyConn.commit();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        System.err.println("Derby Student-User Purge Failed: " + e.getMessage());
+                        throw new SQLException("Derby sync failure on delete, rolling back MySQL.", e);
                     }
                     conn.commit();
                     logAction("Purged Structural Student Profile Ledger Record: " + stuId, authorId);
