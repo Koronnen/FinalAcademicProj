@@ -193,7 +193,9 @@
                                 for (Map<String, String> course : enrolledCourses) { %>
                                 <tr>
                                     <td><span class="badge bg-primary text-uppercase px-2 py-1"><%= course.get("courseCode") %></span></td>
+
                                     <td><strong><%= course.get("courseName") %></strong></td>
+
                                     <td><i class="fa-regular fa-clock me-1 text-muted"></i><%= course.get("timeDetails") %></td>
                                 </tr>
                             <% } } else { %>
