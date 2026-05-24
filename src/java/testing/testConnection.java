@@ -13,8 +13,8 @@ public class testConnection {
 
     // PostgreSQL Configuration
     private static final String POSTGRES_URL = "jdbc:postgresql://localhost:5432/postgres";
-    private static final String POSTGRES_USER = "postgres";
-    private static final String POSTGRES_PASSWORD = "VinzJairus8461`";
+    private static final String POSTGRES_USER = "group7";
+    private static final String POSTGRES_PASSWORD = "jamesbrian7*";
 
     public static void main(String[] args) {
         System.out.println("=== Starting Database Connection Tests ===\n");
