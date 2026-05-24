@@ -2,5 +2,4 @@ drivers/
 /build/
 /dist/
 nbproject/private/
-nbproject/build-impl.xml
 scripts/
