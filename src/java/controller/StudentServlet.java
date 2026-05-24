@@ -7,7 +7,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement; // Added import for Statement
+import java.sql.Statement;
 import java.sql.Time;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -63,7 +63,6 @@ public class StudentServlet extends HttpServlet {
         return DriverManager.getConnection(url, user, pass);
     }
 
-    // New custom ID generator method
     private String generateNextCustomID(Connection conn, String tableName, String idColumnName, String prefix) throws SQLException {
         String sql = "SELECT " + idColumnName + " FROM " + tableName + " WHERE " + idColumnName + " LIKE '" + prefix + "%' ORDER BY " + idColumnName + " DESC LIMIT 1";
         try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
@@ -127,22 +126,20 @@ public class StudentServlet extends HttpServlet {
                 try (PreparedStatement ps = sqlConn.prepareStatement(enrolledSql)) {
                     ps.setString(1, studentId);
                     try (ResultSet rs = ps.executeQuery()) {
+                        /* * FIXED: Removed the secondary nested while (rs.next()) loop.
+                         * A single sequential loop now properly captures every course row.
+                         */
                         while (rs.next()) {
-                            Map<String, String> row = new HashMap<>();
-                            row.put("courseCode", rs.getString("COURSE_CODE"));
-                            while (rs.next()) {
-                                Map<String, String> r = new HashMap<>();
-                                r.put("courseCode", rs.getString("COURSE_CODE"));
-                                r.put("courseName", rs.getString("COURSE_NAME"));
+                            Map<String, String> r = new HashMap<>();
+                            r.put("courseCode", rs.getString("COURSE_CODE"));
+                            r.put("courseName", rs.getString("COURSE_NAME"));
 
-                                // Smooth, verified string building string extraction
-                                String day = rs.getString("DAY_OF_WEEK");
-                                String start = rs.getString("TIME_START");
-                                String end = rs.getString("TIME_END");
-                                r.put("timeDetails", day + " (" + start + " - " + end + ")");
+                            String day = rs.getString("DAY_OF_WEEK");
+                            String start = rs.getString("TIME_START");
+                            String end = rs.getString("TIME_END");
+                            r.put("timeDetails", day + " (" + start + " - " + end + ")");
 
-                                enrolledCourses.add(r);
-                            }
+                            enrolledCourses.add(r);
                         }
                     }
                 }
@@ -203,10 +200,8 @@ public class StudentServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        // 1. Get the session if it exists
         HttpSession session = request.getSession(false);
 
-        // 2. Fixed: Now consistently checks for USER_ID instead of USER_ROLE
         if (session == null || session.getAttribute("USER_ID") == null) {
             response.sendRedirect("index.jsp");
             return;
@@ -256,26 +251,27 @@ public class StudentServlet extends HttpServlet {
             }
             else if ("enrollCourse".equals(action)) {
                 String instCourseId = request.getParameter("instCourseId");
+                String schedId = request.getParameter("schedId"); // <--- Extract the new parameter sent by the JSP
 
                 if (!stuId.isEmpty() && instCourseId != null && !instCourseId.isEmpty()) {
-                    // Replaced UUID generation with your custom ID generator
                     String enrollmentId = generateNextCustomID(sqlConn, "ENROLLMENT", "STU_EN_ID", "ENR");
 
-                    String enrollSql = "INSERT INTO ENROLLMENT (STU_EN_ID, STU_ID, INST_C_ID) VALUES (?, ?, ?)";
+                    // Include SCHED_ID in your database insertion query
+                    String enrollSql = "INSERT INTO ENROLLMENT (STU_EN_ID, STU_ID, INST_C_ID, SCHED_ID) VALUES (?, ?, ?, ?)";
                     try (PreparedStatement ps = sqlConn.prepareStatement(enrollSql)) {
                         ps.setString(1, enrollmentId);
                         ps.setString(2, stuId);
                         ps.setString(3, instCourseId);
+                        ps.setString(4, schedId); // <--- Bind the selected timetable option to the statement
                         ps.executeUpdate();
                     }
-                    logAction(authorID + " Successfully Enrolled to " + instCourseId, authorID);                    
+                    logAction(authorID + " Successfully Enrolled to Course Unit " + instCourseId + " Slot " + schedId, authorID);                    
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        // Redirects seamlessly back to the doGet to re-render the page with new data
         response.sendRedirect(request.getContextPath() + "/StudentServlet");
     }
     
