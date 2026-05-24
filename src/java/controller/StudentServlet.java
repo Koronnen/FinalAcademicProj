@@ -262,7 +262,6 @@ public class StudentServlet extends HttpServlet {
                             ps.setString(3, schedId); 
                             ps.executeUpdate();
                         }
-
                         logAction(authorID + " Successfully Enrolled to Schedule Slot: " + schedId, authorID);                    
                     }
                 }
