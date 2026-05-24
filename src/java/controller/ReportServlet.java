@@ -491,7 +491,7 @@ public class ReportServlet extends HttpServlet {
                     // Failover logic to system standard core font setup if instantiation is blocked
                 }
                 totalPageTemplate.setColorFill(HEADER_BG);
-                totalPageTemplate.showText(String.valueOf(writer.getPageNumber() - 1));
+                totalPageTemplate.showText(String.valueOf(writer.getPageNumber()));
                 totalPageTemplate.endText();
             }
         }

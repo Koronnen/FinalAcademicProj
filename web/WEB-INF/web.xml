@@ -62,7 +62,7 @@
     </context-param>
     <context-param>
         <param-name>postgres.databaseName</param-name>
-        <param-value>postgres</param-value>
+        <param-value>logs</param-value>
     </context-param>
     <context-param>
         <param-name>postgres.jdbcClassName</param-name>
