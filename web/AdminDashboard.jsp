@@ -238,6 +238,7 @@
                     Audit operations broadcast actions to the enterprise PostgreSQL telemetry logger schema.
                 </p>
             </div>
+            <jsp:include page="AdminReportSection.jsp" />
         </div>
 
         <div id="panel-instructors" class="tab-panel-view">
