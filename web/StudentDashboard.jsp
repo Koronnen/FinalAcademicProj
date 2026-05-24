@@ -9,6 +9,7 @@
     HttpSession activeSession = request.getSession(false);
     if (activeSession == null || activeSession.getAttribute("USER_ID") == null) {
         activeSession.setAttribute("loginError", "Access denied. Please log-in again.");
+        response.sendError(HttpServletResponse.SC_FORBIDDEN);
         return;
     }
 
