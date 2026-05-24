@@ -156,6 +156,14 @@
         <servlet-name>AdminDashboardServlet</servlet-name>
         <url-pattern>/AdminDashboardServlet</url-pattern>
     </servlet-mapping>
+    <servlet>
+        <servlet-name>InstructorDashboardServlet</servlet-name>
+        <servlet-class>controller.InstructorDashboardServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>InstructorDashboardServlet</servlet-name>
+        <url-pattern>/InstructorDashboardServlet</url-pattern>
+    </servlet-mapping>  
     <servlet-mapping>
         <servlet-name>LogOutServlet</servlet-name>
         <url-pattern>/LogOutServlet</url-pattern>
