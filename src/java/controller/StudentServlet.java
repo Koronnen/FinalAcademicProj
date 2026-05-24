@@ -193,7 +193,7 @@ public class StudentServlet extends HttpServlet {
         request.setAttribute("enrolledCourses", enrolledCourses);
         request.setAttribute("availableCourses", courseCatalog);
         
-        request.getRequestDispatcher(request.getContextPath() + "/StudentDashboard.jsp").forward(request, response);
+        request.getRequestDispatcher("/StudentDashboard.jsp").forward(request, response);
     }
 
     @Override
