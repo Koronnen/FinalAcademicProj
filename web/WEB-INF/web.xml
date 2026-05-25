@@ -143,6 +143,8 @@
             <param-name>CaptchaSecretKey</param-name>
             <param-value>6LfuAPIsAAAAAGuMrWw28J4yd79bJHQKpfOAf_9f</param-value>
         </init-param>
+    </servlet>
+    <servlet>
         <servlet-name>ReportServlet</servlet-name>
         <servlet-class>controller.ReportServlet</servlet-class>
     </servlet>
@@ -165,6 +167,8 @@
     <servlet-mapping>
         <servlet-name>SignUpServlet</servlet-name>
         <url-pattern>/SignUpServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
         <servlet-name>ReportServlet</servlet-name>
         <url-pattern>/ReportServlet</url-pattern>
     </servlet-mapping>
