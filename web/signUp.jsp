@@ -1,4 +1,9 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%
+    response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    response.setHeader("Pragma", "no-cache");
+    response.setDateHeader("Expires", 0);
+%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -32,10 +37,10 @@
                 <div class="error-message"> <%= incorrectPass %> </div>
             <%   session.removeAttribute("incorrectPass");   } %>
             
-            <%  String loginError = (String) session.getAttribute("loginError");
-                if (loginError != null) { %>
-                <div class="error-message"> <%= loginError %> </div>
-            <%   session.removeAttribute("loginError");   } %>
+            <%  String existError = (String) session.getAttribute("existError");
+                if (existError != null) { %>
+                <div class="error-message"> <%= existError %> </div>
+            <%   session.removeAttribute("existError");   } %>
             
             <form id="signUpForm" action="${pageContext.request.contextPath}/SignUpServlet" method="POST">
                 

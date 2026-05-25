@@ -122,7 +122,7 @@ public class SignUpServlet extends HttpServlet {
                 response.sendRedirect(request.getContextPath() + "/signUp.jsp");
             }
         } else {
-            s.setAttribute("loginError", "An account with that email already exists.");
+            s.setAttribute("existError", "An account with that email already exists.");
             logAction("REJECTED REGISTRATION: Duplicate email hit (" + email + ")", authorId);
             response.sendRedirect(request.getContextPath() + "/signUp.jsp");
         }

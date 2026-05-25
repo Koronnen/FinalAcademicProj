@@ -132,6 +132,7 @@ public class StudentServlet extends HttpServlet {
                         
                         if (rs.getString("FNAME") != null && !rs.getString("FNAME").trim().isEmpty()) {
                             displayName = rs.getString("FNAME");
+                            request.setAttribute("displayName", rs.getString("FNAME"));
                         }
                     }
                 }
@@ -230,7 +231,7 @@ public class StudentServlet extends HttpServlet {
         request.setAttribute("enrolledCourses", enrolledCourses);
         request.setAttribute("availableCourses", courseCatalog);
         
-        request.getRequestDispatcher("/StudentDashboard.jsp").forward(request, response);
+        request.getRequestDispatcher("StudentDashboard.jsp").forward(request, response);
     }
 
     @Override

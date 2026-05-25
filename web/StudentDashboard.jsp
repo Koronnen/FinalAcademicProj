@@ -15,8 +15,9 @@
 
     // 3. Kick them out to index.jsp if they are not userType 1 (Admin)
     if (userType != 2) {
-        System.out.println("reached, not student");
+        System.out.println("reached, nto admin");
         if (activeSession != null) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
             activeSession.setAttribute("loginError", "Unauthorized access. Student privileges required.");
         }
         response.sendRedirect(request.getContextPath() + "/index.jsp");

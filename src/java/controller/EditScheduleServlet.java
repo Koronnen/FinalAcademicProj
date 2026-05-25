@@ -133,7 +133,6 @@ public class EditScheduleServlet extends HttpServlet {
             return;
         }
 
-        // Send them back to the dashboard once updated
         response.sendRedirect("InstructorDashboardServlet");
     }
 }
