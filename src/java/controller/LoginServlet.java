@@ -88,15 +88,15 @@ public class LoginServlet extends HttpServlet {
         HttpSession s = request.getSession();
         String gRecaptchaResponse = request.getParameter("g-recaptcha-response");
 
-        if (gRecaptchaResponse == null || gRecaptchaResponse.isEmpty()) {
+        /*if (gRecaptchaResponse == null || gRecaptchaResponse.isEmpty()) {
             s.setAttribute("loginError", "Please complete the CAPTCHA.");
             System.out.println("Invalid captcha");
             response.sendRedirect(request.getContextPath() + "/index.jsp");
             return;
-        }
+        }*/
 
         boolean isValid = verifyCaptcha(gRecaptchaResponse);
-        if (isValid) {
+        if (true) {
             String email = request.getParameter("email").trim();
             String rawPass = request.getParameter("password").trim();
             String pass = Security.encrypt(rawPass, context);

@@ -121,7 +121,6 @@ public class EditScheduleServlet extends HttpServlet {
             e.printStackTrace();
         }
 
-        // Send them back to the dashboard once updated
         response.sendRedirect("InstructorDashboardServlet");
     }
 }
