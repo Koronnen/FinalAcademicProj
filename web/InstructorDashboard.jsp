@@ -413,15 +413,25 @@
                         <div class="form-grid">
                             <div class="form-group">
                                 <label for="courseSelect">Select Course:</label>
-                                <select id="courseSelect" name="courseId">
-                                    <option value="CRS000001">Advanced Probability and Statistics</option>
-                                    <option value="CRS000002">Applications Development</option>
+                                <select id="courseSelect" name="course_id">
+                                    <%
+                                        Map<String, String> allCourses = (Map<String, String>) request.getAttribute("allCourses");
+                                        if (allCourses != null && !allCourses.isEmpty()) {
+                                            for (Map.Entry<String, String> course : allCourses.entrySet()) {
+                                    %>
+                                    <option value="<%= course.getKey() %>"><%= course.getValue() %></option>
+                                    <%
+                                            }
+                                        } else {
+                                    %>
+                                    <option value="" disabled>No courses available</option>
+                                    <%  } %>
                                 </select>
                             </div>
 
                             <div class="form-group">
                                 <label for="daySelect">Day of the Week:</label>
-                                <select id="daySelect" name="dayOfWeek">
+                                <select id="daySelect" name="day">
                                     <option value="Monday">Monday</option>
                                     <option value="Tuesday">Tuesday</option>
                                     <option value="Wednesday">Wednesday</option>
@@ -433,12 +443,12 @@
 
                             <div class="form-group">
                                 <label for="startTime">Start Time:</label>
-                                <input type="time" id="startTime" name="startTime">
+                                <input type="time" id="startTime" name="start_time">
                             </div>
 
                             <div class="form-group">
                                 <label for="endTime">End Time:</label>
-                                <input type="time" id="endTime" name="endTime">
+                                <input type="time" id="endTime" name="end_time">
                             </div>
                         </div>
 

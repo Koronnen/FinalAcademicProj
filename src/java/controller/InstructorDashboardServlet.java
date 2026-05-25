@@ -19,6 +19,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import model.Schedule;
+import java.util.LinkedHashMap;
 
 /**
  *
@@ -197,10 +198,25 @@ public class InstructorDashboardServlet extends HttpServlet {
         }
 
         LOGGER.log(Level.INFO, "Schedule loaded successfully. Courses mapped: {0}", groupedSchedules.size());
-        
+
+        // Load all available courses for the "Schedule New Course" dropdown
+        Map<String, String> allCourses = new LinkedHashMap<>();
+        try (Connection conn = getMySQLConnection()) {
+            String courseSql = "SELECT COURSE_ID, COURSE_NAME FROM COURSE ORDER BY COURSE_NAME";
+            try (PreparedStatement ps = conn.prepareStatement(courseSql);
+                 ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    allCourses.put(rs.getString("COURSE_ID"), rs.getString("COURSE_NAME"));
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Could not load course list: " + e.getMessage(), e);
+        }
+
         request.setAttribute("groupedSchedules", groupedSchedules);
         request.setAttribute("currentClass", currentClass);
         request.setAttribute("upcomingClassesToday", upcomingClassesToday);
+        request.setAttribute("allCourses", allCourses);
         
         request.getRequestDispatcher("/InstructorDashboard.jsp").forward(request, response);
     }
