@@ -34,7 +34,7 @@ public class InstructorProfileServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("USER_ID") == null) {
-            response.sendRedirect("index.jsp");
+            request.getRequestDispatcher("/ErrorPages/error_session.jsp").forward(request, response);
             return;
         }
 
@@ -98,9 +98,14 @@ public class InstructorProfileServlet extends HttpServlet {
                     }
                 }
 
-            } catch (Exception e) {
-                System.out.println("Error fetching profile stats from MySQL: " + e.getMessage());
+            } catch (SQLException e) {
                 e.printStackTrace();
+                request.getRequestDispatcher("/ErrorPages/error_sql.jsp").forward(request, response);
+                return;
+            } catch (Exception e) {
+                e.printStackTrace();
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                return;
             }
         }
 

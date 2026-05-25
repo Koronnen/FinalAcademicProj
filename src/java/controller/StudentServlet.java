@@ -82,7 +82,7 @@ public class StudentServlet extends HttpServlet {
         
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("USER_ID") == null) {
-            response.sendRedirect("index.jsp");
+            request.getRequestDispatcher("/ErrorPages/error_session.jsp").forward(request, response);
             return;
         }
 
@@ -109,8 +109,14 @@ public class StudentServlet extends HttpServlet {
                     }
                 }
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            request.getRequestDispatcher("/ErrorPages/error_sql.jsp").forward(request, response);
+            return;
         } catch (Exception e) {
             e.printStackTrace();
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            return;
         }
 
         String studentId = profile.getOrDefault("stuId", "");
@@ -184,11 +190,15 @@ public class StudentServlet extends HttpServlet {
                 }
                 courseCatalog.addAll(aggregationMap.values());
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            request.getRequestDispatcher("/ErrorPages/error_sql.jsp").forward(request, response);
+            return;
         } catch (Exception e) {
             e.printStackTrace();
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            return;
         }
-        
-        request.setAttribute("displayName", displayName);
         request.setAttribute("profile", profile);
         request.setAttribute("enrolledCourses", enrolledCourses);
         request.setAttribute("availableCourses", courseCatalog);
@@ -203,7 +213,7 @@ public class StudentServlet extends HttpServlet {
         HttpSession session = request.getSession(false);
 
         if (session == null || session.getAttribute("USER_ID") == null) {
-            response.sendRedirect(request.getContextPath() + "/index.jsp");
+            request.getRequestDispatcher("/ErrorPages/error_session.jsp").forward(request, response);
             return;
         }
 
@@ -266,11 +276,15 @@ public class StudentServlet extends HttpServlet {
                         logAction(authorID + " Successfully Enrolled to Schedule Slot: " + schedId, authorID);                    
                     }
                 }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            request.getRequestDispatcher("/ErrorPages/error_sql.jsp").forward(request, response);
+            return;
         } catch (Exception e) {
             e.printStackTrace();
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            return;
         }
-
-        response.sendRedirect(request.getContextPath() + "/StudentServlet");
     }
     
     private void logAction(String actionMade, String authorId) {

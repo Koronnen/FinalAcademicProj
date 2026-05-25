@@ -68,7 +68,7 @@ public class EditScheduleServlet extends HttpServlet {
         String scheduleId = request.getParameter("scheduleId");
 
         if (scheduleId == null || scheduleId.trim().isEmpty()) {
-            response.sendRedirect("InstructorDashboardServlet");
+            response.sendRedirect(request.getContextPath() + "/InstructorDashboardServlet");
             return;
         }
 
@@ -88,8 +88,14 @@ public class EditScheduleServlet extends HttpServlet {
                     }
                 }
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            request.getRequestDispatcher("/ErrorPages/error_sql.jsp").forward(request, response);
+            return;
         } catch (Exception e) {
             e.printStackTrace();
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            return;
         }
 
         request.getRequestDispatcher("EditSchedule.jsp").forward(request, response);
@@ -117,8 +123,14 @@ public class EditScheduleServlet extends HttpServlet {
 
             logAction("Instructor Updated Schedule: " + scheduleId + " to " + dayOfWeek + " " + timeStart + "-" + timeEnd, userId);
 
+        } catch (SQLException e) {
+            e.printStackTrace();
+            request.getRequestDispatcher("/ErrorPages/error_sql.jsp").forward(request, response);
+            return;
         } catch (Exception e) {
             e.printStackTrace();
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            return;
         }
 
         // Send them back to the dashboard once updated

@@ -110,11 +110,12 @@ public class AdminDashboardServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         // Session Role Verification Check
         if (!isAuthorizedAdmin(request)) {
-            HttpSession session = request.getSession(false);
-            if (session != null) {
-                session.setAttribute("loginError", "Unauthorized access. Administrator privileges required.");
+            HttpSession checkSession = request.getSession(false);
+            if (checkSession == null || checkSession.getAttribute("USER_ID") == null) {
+                request.getRequestDispatcher("/ErrorPages/error_session.jsp").forward(request, response);
+            } else {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN);
             }
-            response.sendRedirect(request.getContextPath() + "/index.jsp");
             return;
         }
 
@@ -275,11 +276,12 @@ public class AdminDashboardServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         if (!isAuthorizedAdmin(request)) {
-            HttpSession session = request.getSession(false);
-            if (session != null) {
-                session.setAttribute("loginError", "Unauthorized write action. Administrator privileges required.");
+            HttpSession checkSession = request.getSession(false);
+            if (checkSession == null || checkSession.getAttribute("USER_ID") == null) {
+                request.getRequestDispatcher("/ErrorPages/error_session.jsp").forward(request, response);
+            } else {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN);
             }
-            response.sendRedirect(request.getContextPath() + "/index.jsp");
             return;
         }
 
@@ -288,7 +290,7 @@ public class AdminDashboardServlet extends HttpServlet {
         // ADDED HERE: Verify login status via USER_ID session token
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("USER_ID") == null) {
-            response.sendRedirect("index.jsp");
+            request.getRequestDispatcher("/ErrorPages/error_session.jsp").forward(request, response);
             return;
         }
 

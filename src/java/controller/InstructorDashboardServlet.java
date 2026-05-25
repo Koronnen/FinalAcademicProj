@@ -95,7 +95,12 @@ public class InstructorDashboardServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         if (!isAuthorizedInstructor(request)) {
-            response.sendRedirect(request.getContextPath() + "/index.jsp");
+            HttpSession checkSession = request.getSession(false);
+            if (checkSession == null || checkSession.getAttribute("USER_ID") == null) {
+                request.getRequestDispatcher("/ErrorPages/error_session.jsp").forward(request, response);
+            } else {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            }
             return;
         }
 
@@ -137,9 +142,14 @@ public class InstructorDashboardServlet extends HttpServlet {
                     }
                 }
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            request.getRequestDispatcher("/ErrorPages/error_sql.jsp").forward(request, response);
+            return;
         } catch (Exception e) {
             e.printStackTrace();
-            System.err.println("Failed to fetch schedules: " + e.getMessage());
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            return;
         }
 
         request.setAttribute("scheduleList", scheduleList);
@@ -149,7 +159,12 @@ public class InstructorDashboardServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         if (!isAuthorizedInstructor(request)) {
-            response.sendRedirect(request.getContextPath() + "/index.jsp");
+            HttpSession checkSession = request.getSession(false);
+            if (checkSession == null || checkSession.getAttribute("USER_ID") == null) {
+                request.getRequestDispatcher("/ErrorPages/error_session.jsp").forward(request, response);
+            } else {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            }
             return;
         }
 
@@ -170,9 +185,14 @@ public class InstructorDashboardServlet extends HttpServlet {
 
                 logAction("Instructor Deleted Schedule: " + scheduleId, userId);
 
+            } catch (SQLException e) {
+                e.printStackTrace();
+                request.getRequestDispatcher("/ErrorPages/error_sql.jsp").forward(request, response);
+                return;
             } catch (Exception e) {
                 e.printStackTrace();
-                System.err.println("Instructor Schedule Deletion Failed: " + e.getMessage());
+                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                return;
             }
 
             response.sendRedirect("InstructorDashboardServlet");
@@ -241,10 +261,12 @@ public class InstructorDashboardServlet extends HttpServlet {
 
             response.sendRedirect("InstructorDashboardServlet");
 
+        } catch (SQLException e) {
+            e.printStackTrace();
+            request.getRequestDispatcher("/ErrorPages/error_sql.jsp").forward(request, response);
         } catch (Exception e) {
             e.printStackTrace();
-            System.err.println("Instructor Schedule Addition Failed: " + e.getMessage());
-            response.sendRedirect("InstructorDashboard.jsp?error=true");
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }
 }
