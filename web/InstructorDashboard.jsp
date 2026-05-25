@@ -10,12 +10,23 @@
     response.setHeader("Pragma", "no-cache");
     response.setDateHeader("Expires", 0);
     
+    // 1. Get the current active session state
     HttpSession activeSession = request.getSession(false);
-    if (activeSession == null || activeSession.getAttribute("USER_ID") == null) {
-        activeSession.setAttribute("loginError", "Access denied. Please log-in again.");
-        response.sendError(HttpServletResponse.SC_FORBIDDEN);
-        return;
+
+    // 2. Fetch the integer role status safely
+    Object roleObj = (activeSession != null) ? activeSession.getAttribute("role") : null;
+    int userType = (roleObj instanceof Integer) ? (Integer) roleObj : -1;
+
+    // 3. Kick them out if they are NOT an Instructor (2)
+    if (userType != 2) { 
+        System.out.println("Access denied: User is not an instructor.");
+        if (activeSession != null) {
+            activeSession.setAttribute("loginError", "Access denied. Instructor privileges required.");
+        }
+        response.sendRedirect(request.getContextPath() + "/index.jsp");
+        return; 
     }
+
 %>
 <!DOCTYPE html>
 <html>
