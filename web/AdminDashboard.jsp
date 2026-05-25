@@ -12,6 +12,7 @@
     if (userType != 1) {
         System.out.println("reached, nto admin");
         if (activeSession != null) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
             activeSession.setAttribute("loginError", "Unauthorized access. Administrator privileges required.");
         }
         response.sendRedirect(request.getContextPath() + "/index.jsp");
