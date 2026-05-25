@@ -300,7 +300,18 @@
 
             <div class="content-area">
 
-                <h2 class="section-title">My Registered Academic Syllabus</h2>
+                <h2 class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
+                    My Registered Academic Syllabus
+                    <a href="InstructorScheduleReportServlet"
+                       style="font-size:0.85rem; font-weight:600; color:#ef4444; text-decoration:none;
+                              border:1px solid #ef4444; padding:7px 14px; border-radius:6px;
+                              display:inline-flex; align-items:center; gap:6px; transition:background 0.2s, color 0.2s;"
+                       onmouseover="this.style.background='#ef4444';this.style.color='#fff';"
+                       onmouseout="this.style.background='transparent';this.style.color='#ef4444';"
+                       title="Download your weekly teaching schedule as a PDF">
+                        <i class="fa-solid fa-file-pdf"></i> Download Schedule PDF
+                    </a>
+                </h2>
                 <div class="card">
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead>
