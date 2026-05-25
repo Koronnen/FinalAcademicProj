@@ -18,7 +18,7 @@
     int userType = (roleObj instanceof Integer) ? (Integer) roleObj : -1;
 
     // 3. Kick them out if they are NOT an Instructor (2)
-    if (userType != 2) { 
+    if (userType != 3) { 
         System.out.println("Access denied: User is not an instructor.");
         if (activeSession != null) {
             activeSession.setAttribute("loginError", "Access denied. Instructor privileges required.");
