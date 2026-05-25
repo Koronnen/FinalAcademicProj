@@ -314,6 +314,7 @@ public class StudentServlet extends HttpServlet {
                         logAction(authorID + " Successfully Enrolled to Schedule Slot: " + schedId, authorID);                    
                     }
                 }
+            response.sendRedirect(request.getContextPath() + "/StudentServlet");
         } catch (SQLException e) {
             e.printStackTrace();
             request.getRequestDispatcher("/ErrorPages/error_sql.jsp").forward(request, response);
