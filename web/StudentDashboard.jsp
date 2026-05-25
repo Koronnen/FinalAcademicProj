@@ -186,8 +186,13 @@
         </div>
 
         <div id="panel-schedule" class="tab-panel-view active-panel">
-            <div class="mb-3">
+            <div class="mb-3 d-flex justify-content-between align-items-center">
                 <h5 class="fw-bold text-dark m-0">My Registered Academic Syllabus</h5>
+                <a href="${pageContext.request.contextPath}/StudentScheduleReportServlet"
+                   class="btn btn-sm btn-outline-danger px-3"
+                   title="Download your weekly timetable as a PDF">
+                    <i class="fa-solid fa-file-pdf me-1"></i> Download Timetable PDF
+                </a>
             </div>
             <div class="card card-table-container">
                 <div class="table-responsive">
