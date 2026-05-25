@@ -14,7 +14,7 @@
     int userType = (roleObj instanceof Integer) ? (Integer) roleObj : -1;
 
     // 3. Kick them out to index.jsp if they are not userType 1 (Admin)
-    if (userType != 3) {
+    if (userType != 2) {
         System.out.println("reached, not student");
         if (activeSession != null) {
             activeSession.setAttribute("loginError", "Unauthorized access. Student privileges required.");
