@@ -1,3 +1,21 @@
+<%
+    // Prevent the login page itself from caching
+    response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    response.setHeader("Pragma", "no-cache");
+    response.setDateHeader("Expires", 0);
+
+    // Check if a user landed here while still holding an active session
+    HttpSession activeSession = request.getSession(false);
+    if (activeSession != null && activeSession.getAttribute("USER_ID") != null) {
+        String sessionMsg = (String) activeSession.getAttribute("loginError");
+        activeSession.invalidate();
+       
+        HttpSession newSession = request.getSession(true);
+        if(sessionMsg != null){
+            newSession.setAttribute("loginError", "Access Denied: You have been safely logged out due to page navigation.");
+        }
+    }
+%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -27,6 +45,17 @@
                     session.removeAttribute("loginError"); 
                 } 
             %>
+            <% 
+                String successMessage = (String) session.getAttribute("successMessage");
+                if (successMessage != null) { 
+            %>
+                <div class="success-message">
+                    <%= successMessage %>
+                </div>
+            <% 
+                    session.removeAttribute("successMessage"); 
+                } 
+            %>
             
             <form id="loginForm" onsubmit="handleLogin(event)" action="${pageContext.request.contextPath}/loginServlet" method="POST">
                 <div class="input-group">
@@ -47,7 +76,7 @@
                 </div>
 
                 <button type="submit" class="submit-btn">
-                    <span class="btn-text">Sign In</span>
+                    <span class="btn-text">Log In</span>
                     <div class="btn-loader"></div>
                 </button>
             </form>
