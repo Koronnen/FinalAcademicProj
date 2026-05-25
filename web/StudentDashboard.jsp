@@ -6,10 +6,21 @@
     response.setHeader("Pragma", "no-cache");
     response.setDateHeader("Expires", 0);
     
+    // 1. Get the current active session state
     HttpSession activeSession = request.getSession(false);
-    if (activeSession == null || activeSession.getAttribute("USER_ID") == null) {
-        activeSession.setAttribute("loginError", "Access denied. Please log-in again.");
-        return;
+
+    // 2. Fetch the integer role status safely
+    Object roleObj = (activeSession != null) ? activeSession.getAttribute("role") : null;
+    int userType = (roleObj instanceof Integer) ? (Integer) roleObj : -1;
+
+    // 3. Kick them out to index.jsp if they are not userType 1 (Admin)
+    if (userType != 3) {
+        System.out.println("reached, not student");
+        if (activeSession != null) {
+            activeSession.setAttribute("loginError", "Unauthorized access. Student privileges required.");
+        }
+        response.sendRedirect(request.getContextPath() + "/index.jsp");
+        return; // Terminates page rendering immediately
     }
 
     String displayName = (String) request.getAttribute("displayName");

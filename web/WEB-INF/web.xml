@@ -121,18 +121,6 @@
         </init-param>
     </servlet>
     <servlet>
-        <servlet-name>SignUpServlet</servlet-name>
-        <servlet-class>controller.SignUpServlet</servlet-class>
-        <init-param>
-            <param-name>SecretKey</param-name>
-            <param-value>marychildacademy</param-value>
-        </init-param>
-        <init-param>
-            <param-name>CaptchaSecretKey</param-name>
-            <param-value>6LfuAPIsAAAAAGuMrWw28J4yd79bJHQKpfOAf_9f</param-value>
-        </init-param>
-    </servlet>
-    <servlet>
         <servlet-name>AdminDashboardServlet</servlet-name>
         <servlet-class>controller.AdminDashboardServlet</servlet-class>
     </servlet>
@@ -145,6 +133,16 @@
         <servlet-class>controller.LogOutServlet</servlet-class>
     </servlet>
     <servlet>
+        <servlet-name>SignUpServlet</servlet-name>
+        <servlet-class>controller.SignUpServlet</servlet-class>
+        <init-param>
+            <param-name>SecretKey</param-name>
+            <param-value>marychildacademy</param-value>
+        </init-param>
+        <init-param>
+            <param-name>CaptchaSecretKey</param-name>
+            <param-value>6LfuAPIsAAAAAGuMrWw28J4yd79bJHQKpfOAf_9f</param-value>
+        </init-param>
         <servlet-name>ReportServlet</servlet-name>
         <servlet-class>controller.ReportServlet</servlet-class>
     </servlet>
@@ -157,10 +155,6 @@
         <url-pattern>/StudentServlet</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
-        <servlet-name>SignUpServlet</servlet-name>
-        <url-pattern>/SignUpServlet</url-pattern>
-    </servlet-mapping>
-    <servlet-mapping>
         <servlet-name>AdminDashboardServlet</servlet-name>
         <url-pattern>/AdminDashboardServlet</url-pattern>
     </servlet-mapping>
@@ -169,6 +163,8 @@
         <url-pattern>/LogOutServlet</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
+        <servlet-name>SignUpServlet</servlet-name>
+        <url-pattern>/SignUpServlet</url-pattern>
         <servlet-name>ReportServlet</servlet-name>
         <url-pattern>/ReportServlet</url-pattern>
     </servlet-mapping>
