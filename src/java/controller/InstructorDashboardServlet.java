@@ -137,11 +137,13 @@ public class InstructorDashboardServlet extends HttpServlet {
 
                     // 2. Fetch schedules
                     String sql = "SELECT s.SCHED_ID, s.DAY_OF_WEEK, s.TIME_START, s.TIME_END, c.COURSE_NAME, "
-                               + "0 AS STUDENT_COUNT " 
-                               + "FROM SCHEDULE s "
-                               + "JOIN INSTRUCTORS_COURSE ic ON s.INST_C_ID = ic.INST_C_ID " 
-                               + "JOIN COURSE c ON ic.COURSE_ID = c.COURSE_ID " 
-                               + "WHERE TRIM(ic.INST_ID) = ?"; 
+                                + "COUNT(e.STU_ID) AS STUDENT_COUNT " 
+                                + "FROM SCHEDULE s "
+                                + "JOIN INSTRUCTORS_COURSE ic ON s.INST_C_ID = ic.INST_C_ID " 
+                                + "JOIN COURSE c ON ic.COURSE_ID = c.COURSE_ID " 
+                                + "LEFT JOIN ENROLLMENT e ON s.SCHED_ID = e.SCHED_ID " 
+                                + "WHERE TRIM(ic.INST_ID) = ? "
+                                + "GROUP BY s.SCHED_ID, s.DAY_OF_WEEK, s.TIME_START, s.TIME_END, c.COURSE_NAME";
 
                     try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                         stmt.setString(1, instId.trim()); 
