@@ -62,7 +62,7 @@
     </context-param>
     <context-param>
         <param-name>postgres.databaseName</param-name>
-        <param-value>logs?sslmode=disable</param-value>
+        <param-value>logs</param-value>
     </context-param>
     <context-param>
         <param-name>postgres.jdbcClassName</param-name>
@@ -143,6 +143,8 @@
             <param-name>CaptchaSecretKey</param-name>
             <param-value>6LfuAPIsAAAAAGuMrWw28J4yd79bJHQKpfOAf_9f</param-value>
         </init-param>
+        <servlet-name>ReportServlet</servlet-name>
+        <servlet-class>controller.ReportServlet</servlet-class>
     </servlet>
     <servlet-mapping>
         <servlet-name>LoginServlet</servlet-name>
@@ -163,6 +165,8 @@
     <servlet-mapping>
         <servlet-name>SignUpServlet</servlet-name>
         <url-pattern>/SignUpServlet</url-pattern>
+        <servlet-name>ReportServlet</servlet-name>
+        <url-pattern>/ReportServlet</url-pattern>
     </servlet-mapping>
     <session-config>
         <session-timeout>
