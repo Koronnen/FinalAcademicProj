@@ -7,21 +7,26 @@ package controller;
 
 import java.io.IOException;
 import java.sql.*;
-
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
+import model.Schedule;
+
 /**
  *
  * @author Javo
  */
 public class InstructorDashboardServlet extends HttpServlet {
+
+    private static final Logger LOGGER = Logger.getLogger(InstructorDashboardServlet.class.getName());
 
     private boolean isAuthorizedInstructor(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
@@ -75,7 +80,7 @@ public class InstructorDashboardServlet extends HttpServlet {
             pstmt.setTime(5, Time.valueOf(LocalTime.now()));
             pstmt.executeUpdate();
         } catch (Exception e) {
-            System.err.println("PostgreSQL Telemetry Log Drop: " + e.getMessage());
+            LOGGER.log(Level.SEVERE, "PostgreSQL Telemetry Log Drop: " + e.getMessage(), e);
         }
     }
 
@@ -95,6 +100,7 @@ public class InstructorDashboardServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         if (!isAuthorizedInstructor(request)) {
+            LOGGER.log(Level.WARNING, "Unauthorized access attempt to InstructorDashboardServlet.");
             response.sendRedirect(request.getContextPath() + "/index.jsp");
             return;
         }
@@ -102,48 +108,90 @@ public class InstructorDashboardServlet extends HttpServlet {
         HttpSession session = request.getSession(false);
         String userId = (String) session.getAttribute("USER_ID");
 
-        List<Map<String, String>> scheduleList = new ArrayList<>();
+        Map<String, List<Schedule>> groupedSchedules = new java.util.HashMap<>(); 
+        
+        Schedule currentClass = null;
+        List<Schedule> upcomingClassesToday = new ArrayList<>();
+        
+        String todayName = LocalDate.now().getDayOfWeek().name();
+        LocalTime currentTime = LocalTime.now();
 
-        try (Connection conn = getMySQLConnection()) {
-            String sql = "SELECT s.SCHED_ID, s.DAY_OF_WEEK, s.TIME_START, s.TIME_END, ic.COURSE_ID "
-                    + "FROM SCHEDULE s "
-                    + "JOIN INSTRUCTORS_COURSE ic ON s.INST_C_ID = ic.INST_C_ID "
-                    + "JOIN INSTRUCTOR i ON ic.INST_ID = i.INST_ID "
-                    + "WHERE i.USER_ID = ? "
-                    + "ORDER BY s.DAY_OF_WEEK, s.TIME_START";
+        String instId = null; 
 
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, userId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        Map<String, String> sched = new HashMap<>();
-                        sched.put("dayOfWeek", rs.getString("DAY_OF_WEEK"));
-                        sched.put("timeStart", rs.getString("TIME_START"));
-                        sched.put("timeEnd", rs.getString("TIME_END"));
+        try {
+            try (Connection conn = getMySQLConnection()) {
 
-                        String courseId = rs.getString("COURSE_ID");
-                        String courseName = courseId;
-                        if ("CRS000001".equals(courseId)) {
-                            courseName = "Advanced Probability and Statistics";
+                String getInstIdSql = "SELECT INST_ID FROM INSTRUCTOR WHERE USER_ID = ?";
+                
+                try (PreparedStatement ps = conn.prepareStatement(getInstIdSql)) {
+                    ps.setString(1, userId);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            instId = rs.getString("INST_ID");
                         }
-                        if ("CRS000002".equals(courseId)) {
-                            courseName = "Applications Development";
-                        }
-                        sched.put("courseName", courseName);
-
-                        sched.put("scheduleId", rs.getString("SCHED_ID"));
-
-                        scheduleList.add(sched);
                     }
                 }
+
+                if (instId != null) {
+                    LOGGER.log(Level.INFO, "Loading schedule for Instructor ID: {0}", instId);
+
+                    // 2. Fetch schedules
+                    String sql = "SELECT s.SCHED_ID, s.DAY_OF_WEEK, s.TIME_START, s.TIME_END, c.COURSE_NAME, "
+                               + "0 AS STUDENT_COUNT " 
+                               + "FROM SCHEDULE s "
+                               + "JOIN INSTRUCTORS_COURSE ic ON s.INST_C_ID = ic.INST_C_ID " 
+                               + "JOIN COURSE c ON ic.COURSE_ID = c.COURSE_ID " 
+                               + "WHERE TRIM(ic.INST_ID) = ?"; 
+
+                    try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                        stmt.setString(1, instId.trim()); 
+                        
+                        try (ResultSet rs = stmt.executeQuery()) {
+                            while (rs.next()) {
+                                String schedId = rs.getString("SCHED_ID");
+                                String dayOfWeek = rs.getString("DAY_OF_WEEK");
+                                java.sql.Time startTime = rs.getTime("TIME_START");
+                                java.sql.Time endTime = rs.getTime("TIME_END");
+                                int studentCount = rs.getInt("STUDENT_COUNT");
+                                String courseName = rs.getString("COURSE_NAME");
+
+                                Schedule schedule = new Schedule(schedId, dayOfWeek, startTime, endTime, studentCount);
+                                schedule.setCourseName(courseName); 
+
+                                if (!groupedSchedules.containsKey(courseName)) {
+                                    groupedSchedules.put(courseName, new java.util.ArrayList<>());
+                                }
+                                groupedSchedules.get(courseName).add(schedule);
+
+                                if (todayName.equalsIgnoreCase(dayOfWeek)) {
+                                    LocalTime start = startTime.toLocalTime();
+                                    LocalTime end = endTime.toLocalTime();
+                                    
+                                    if (!currentTime.isBefore(start) && !currentTime.isAfter(end)) {
+                                        currentClass = schedule; 
+                                    } else if (currentTime.isBefore(start)) {
+                                        upcomingClassesToday.add(schedule); 
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    LOGGER.log(Level.WARNING, "No Instructor ID found for User ID: {0}", userId);
+                }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println("Failed to fetch schedules: " + e.getMessage());
+        } catch (SQLException | ClassNotFoundException e) {
+            LOGGER.log(Level.SEVERE, "Database connection error in InstructorDashboardServlet: " + e.getMessage(), e);
+            request.setAttribute("errorMessage", "Database connection error: " + e.getMessage());
         }
 
-        request.setAttribute("scheduleList", scheduleList);
-        request.getRequestDispatcher("InstructorDashboard.jsp").forward(request, response);
+        LOGGER.log(Level.INFO, "Schedule loaded successfully. Courses mapped: {0}", groupedSchedules.size());
+        
+        request.setAttribute("groupedSchedules", groupedSchedules);
+        request.setAttribute("currentClass", currentClass);
+        request.setAttribute("upcomingClassesToday", upcomingClassesToday);
+        
+        request.getRequestDispatcher("/InstructorDashboard.jsp").forward(request, response);
     }
 
     @Override
@@ -155,7 +203,6 @@ public class InstructorDashboardServlet extends HttpServlet {
 
         HttpSession session = request.getSession(false);
         String userId = (String) session.getAttribute("USER_ID");
-
         String action = request.getParameter("action");
 
         if ("delete".equals(action)) {
@@ -167,16 +214,15 @@ public class InstructorDashboardServlet extends HttpServlet {
                     pstmt.setString(1, scheduleId);
                     pstmt.executeUpdate();
                 }
-
                 logAction("Instructor Deleted Schedule: " + scheduleId, userId);
+                LOGGER.log(Level.INFO, "Schedule deleted: {0} by User: {1}", new Object[]{scheduleId, userId});
 
             } catch (Exception e) {
-                e.printStackTrace();
-                System.err.println("Instructor Schedule Deletion Failed: " + e.getMessage());
+                LOGGER.log(Level.SEVERE, "Instructor Schedule Deletion Failed: " + e.getMessage(), e);
             }
 
             response.sendRedirect("InstructorDashboardServlet");
-            return; // Stop execution here so it doesn't try to add a schedule
+            return; 
         }
 
         try (Connection conn = getMySQLConnection()) {
@@ -238,12 +284,12 @@ public class InstructorDashboardServlet extends HttpServlet {
 
             conn.commit();
             logAction("Instructor Self-Assigned Schedule: " + nextSchedId + " (" + timeStart + "-" + timeEnd + ")", userId);
+            LOGGER.log(Level.INFO, "Schedule added: {0} for Course: {1}", new Object[]{nextSchedId, courseId});
 
             response.sendRedirect("InstructorDashboardServlet");
 
         } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println("Instructor Schedule Addition Failed: " + e.getMessage());
+            LOGGER.log(Level.SEVERE, "Instructor Schedule Addition Failed: " + e.getMessage(), e);
             response.sendRedirect("InstructorDashboard.jsp?error=true");
         }
     }

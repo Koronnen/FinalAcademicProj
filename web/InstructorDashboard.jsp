@@ -1,20 +1,20 @@
 <%-- 
-    Document   : InstructorDashboard
-    Created on : 05 20, 26, 9:37:56 AM
-    Author     : Vinz / AI Collaborator
+    Document   : InstructorProfile
+    Created on : 05 23, 26, 8:14:57 PM
+    Author     : Javo
 --%>
 
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page import="java.util.List, java.util.Map"%>
+<%@page import="java.util.List"%>
+<%@page import="java.util.Map"%>
+<%@page import="model.Schedule"%>
 <!DOCTYPE html>
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <title>Instructor Dashboard</title>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-        <style>
-            /* Reset and Base Styles */
-            * {
+        <style>            * {
                 margin: 0;
                 padding: 0;
                 box-sizing: border-box;
@@ -28,7 +28,6 @@
                 overflow: hidden;
             }
 
-            /* Sidebar Styles - Fixed Link Styling */
             .sidebar {
                 width: 260px;
                 background-color: #243040; 
@@ -118,7 +117,6 @@
                 display: block;
             }
 
-            /* Content Area and Cards */
             .content-area { padding: 30px 40px; }
             .section-title {
                 font-size: 1.2rem;
@@ -134,7 +132,6 @@
                 margin-bottom: 30px;
             }
 
-            /* Table Styles */
             table {
                 width: 100%;
                 border-collapse: collapse;
@@ -155,15 +152,7 @@
                 vertical-align: middle;
             }
             tr:last-child td { border-bottom: none; }
-            .course-name { font-weight: 600; color: #1e293b; }
-            .time-slot {
-                color: #64748b;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
 
-            /* Form Styles */
             .form-grid {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
@@ -189,7 +178,6 @@
             }
             select:focus, input[type="time"]:focus { border-color: #3b82f6; }
 
-            /* Buttons */
             .btn {
                 padding: 10px 20px;
                 border-radius: 6px;
@@ -202,24 +190,32 @@
             .btn-primary:hover { background-color: #2563eb; }
             .btn-secondary { background-color: #94a3b8; color: white; margin-top: 10px;}
             .btn-secondary:hover { background-color: #64748b; }
-            
+
             .btn-edit {
                 background-color: #f1f5f9;
                 color: #475569;
                 padding: 6px 12px;
-                margin-right: 5px;
+                margin-right: 8px;
                 font-size: 0.85rem;
+                border: none;
+                border-radius: 4px;
+                font-weight: 600;
+                cursor: pointer;
             }
+            .btn-edit:hover { background-color: #e2e8f0; }
+
             .btn-delete {
                 background-color: #fef2f2;
                 color: #ef4444;
                 padding: 6px 12px;
                 font-size: 0.85rem;
+                border: none;
+                border-radius: 4px;
+                font-weight: 600;
+                cursor: pointer;
             }
-            .btn-edit:hover { background-color: #e2e8f0; }
             .btn-delete:hover { background-color: #fee2e2; }
 
-            /* GUI MODAL STYLES */
             .modal-overlay {
                 display: none;
                 position: fixed;
@@ -254,12 +250,10 @@
             }
             .close-modal-btn:hover { color: #ef4444; }
             .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px; }
-
         </style>
     </head>
     <body>
         <%
-            // Fallback safe session variable reading for Instructor Name
             String firstName = (session.getAttribute("firstName") != null) ? session.getAttribute("firstName").toString() : "Instructor";
             String lastName = (session.getAttribute("lastName") != null) ? session.getAttribute("lastName").toString() : "";
             String fullName = firstName + (lastName.isEmpty() ? "" : " " + lastName);
@@ -277,7 +271,7 @@
                             <i class="fa-regular fa-user"></i>
                             My Profile
                         </a>
-                    </li>                    
+                    </li>                     
                     <li class="active">
                         <a href="InstructorDashboardServlet">
                             <i class="fa-regular fa-calendar-days"></i>
@@ -300,75 +294,86 @@
                 <div class="header-title">Instructor Dashboard Console</div>
                 <div class="user-info">
                     Welcome back,
-                    <span class="user-name"><%= fullName %></span>
+                    <span class="user-name"><%= fullName%></span>
                 </div>
             </header>
 
             <div class="content-area">
 
-                <h2 class="section-title" style="display:flex; justify-content:space-between; align-items:center;">
-                    My Registered Academic Syllabus
-                    <a href="InstructorScheduleReportServlet"
-                       style="font-size:0.85rem; font-weight:600; color:#ef4444; text-decoration:none;
-                              border:1px solid #ef4444; padding:7px 14px; border-radius:6px;
-                              display:inline-flex; align-items:center; gap:6px; transition:background 0.2s, color 0.2s;"
-                       onmouseover="this.style.background='#ef4444';this.style.color='#fff';"
-                       onmouseout="this.style.background='transparent';this.style.color='#ef4444';"
-                       title="Download your weekly teaching schedule as a PDF">
-                        <i class="fa-solid fa-file-pdf"></i> Download Schedule PDF
-                    </a>
-                </h2>
+                <h2 class="section-title">My Registered Academic Syllabus</h2>
                 <div class="card">
-                    <table>
+                    <table style="width: 100%; border-collapse: collapse;">
                         <thead>
                             <tr>
-                                <th>Day of Week</th>
-                                <th>Course Name</th>
-                                <th>Assigned Timetable Slot</th>
-                                <th>Actions</th>
+                                <th style="padding: 12px 15px; border-bottom: 2px solid #e5e7eb; text-align: left; color: #64748b;">Course Name</th>
+                                <th style="padding: 12px 15px; border-bottom: 2px solid #e5e7eb; text-align: left; color: #64748b;">Day of Week</th>
+                                <th style="padding: 12px 15px; border-bottom: 2px solid #e5e7eb; text-align: left; color: #64748b;">Assigned Timetable Slot</th>
+                                <th style="padding: 12px 15px; border-bottom: 2px solid #e5e7eb; text-align: left; color: #64748b;">Enrolled</th>
+                                <th style="padding: 12px 15px; border-bottom: 2px solid #e5e7eb; text-align: right; color: #64748b;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <%
-                                List<Map<String, String>> scheduleList = (List<Map<String, String>>) request.getAttribute("scheduleList");
+                                Map<String, List<Schedule>> groupedSchedules = (Map<String, List<Schedule>>) request.getAttribute("groupedSchedules");
 
-                                if (scheduleList != null && !scheduleList.isEmpty()) {
-                                    for (Map<String, String> sched : scheduleList) {
+                                if (groupedSchedules != null && !groupedSchedules.isEmpty()) {
+                                    for (Map.Entry<String, List<Schedule>> entry : groupedSchedules.entrySet()) {
+                                        String courseName = entry.getKey();
+                                        List<Schedule> schedules = entry.getValue();
+
+                                        int rowSpanCount = schedules.size();
+                                        boolean isFirstRow = true;
+
+                                        for (Schedule sched : schedules) {
                             %>
                             <tr>
-                                <td><%= sched.get("dayOfWeek")%></td>
-                                <td class="course-name"><%= sched.get("courseName")%></td>
-                                <td>
-                                    <div class="time-slot">
-                                        <i class="fa-regular fa-clock"></i>
-                                        <%= sched.get("timeStart")%> - <%= sched.get("timeEnd")%>
-                                    </div>
+                                <%-- ONLY print the course name cell if it's the first row for this subject --%>
+                                <% if (isFirstRow) {%>
+                                <td rowspan="<%= rowSpanCount%>" style="padding: 15px; border-bottom: 1px solid #cbd5e1; border-right: 1px solid #f1f5f9; color: #0f172a; font-weight: bold; vertical-align: top;">
+                                    <i class="fa-solid fa-book-bookmark" style="color: #3b82f6; margin-right: 8px;"></i>
+                                    <%= courseName%>
                                 </td>
-                                <td>
-                                    <button type="button" class="btn btn-edit" 
-                                            onclick="openEditModal('<%= sched.get("scheduleId")%>', '<%= sched.get("dayOfWeek")%>', '<%= sched.get("timeStart")%>', '<%= sched.get("timeEnd")%>')">
+                                <% }%>
+
+                                <td style="padding: 15px; border-bottom: 1px solid #f1f5f9; color: #475569; font-weight: 500;">
+                                    <%= sched.getDayOfWeek()%>
+                                </td>
+                                <td style="padding: 15px; border-bottom: 1px solid #f1f5f9; color: #475569;">
+                                    <i class="fa-regular fa-clock" style="color: #94a3b8; margin-right: 5px;"></i>
+                                    <%= sched.getStartTime()%> - <%= sched.getEndTime()%>
+                                </td>
+                                <td style="padding: 15px; border-bottom: 1px solid #f1f5f9; color: #16a34a; font-weight: bold;">
+                                    <i class="fa-solid fa-user-group" style="margin-right: 5px;"></i>
+                                    <%= sched.getStudentCount()%>
+                                </td>
+                                <td style="padding: 15px; border-bottom: 1px solid #f1f5f9; text-align: right;">
+
+                                    <button type="button" class="btn-edit" onclick="openEditModal('<%= sched.getSchedId()%>', '<%= sched.getDayOfWeek()%>', '<%= sched.getStartTime()%>', '<%= sched.getEndTime()%>')">
                                         Edit
                                     </button>
 
-                                    <form action="InstructorDashboardServlet" method="POST" style="display:inline;">
+                                    <form action="InstructorDashboardServlet" method="POST" style="display: inline-block; margin: 0;">
                                         <input type="hidden" name="action" value="delete">
-                                        <input type="hidden" name="scheduleId" value="<%= sched.get("scheduleId")%>">
-                                        <button type="submit" class="btn btn-delete" onclick="return confirm('Are you sure you want to delete this schedule?');">Delete</button>
+                                        <input type="hidden" name="scheduleId" value="<%= sched.getSchedId()%>">
+                                        <button type="submit" class="btn-delete" onclick="return confirm('Are you sure you want to delete this schedule?');">
+                                            Delete
+                                        </button>
                                     </form>
+
                                 </td>
                             </tr>
                             <%
+                                        isFirstRow = false;
                                     }
-                                } else {
+                                }
+                            } else {
                             %>
                             <tr>
-                                <td colspan="4" style="text-align: center; color: #64748b; padding: 30px;">
-                                    No schedules added yet. Create one below!
+                                <td colspan="5" style="text-align: center; padding: 30px; color: #94a3b8;">
+                                    No syllabus registered yet.
                                 </td>
                             </tr>
-                            <%
-                                }
-                            %>
+                            <% }%>
                         </tbody>
                     </table>
                 </div>
@@ -377,38 +382,38 @@
                 <div class="card">
                     <form action="InstructorDashboardServlet" method="POST">
                         <div class="form-grid">
-                            <div class="form-group full-width">
-                                <label>Select Course:</label>
-                                <select name="course_id">
+                            <div class="form-group">
+                                <label for="courseSelect">Select Course:</label>
+                                <select id="courseSelect" name="courseId">
                                     <option value="CRS000001">Advanced Probability and Statistics</option>
                                     <option value="CRS000002">Applications Development</option>
                                 </select>
                             </div>
 
-                            <div class="form-group full-width">
-                                <label>Day of the Week:</label>
-                                <select name="day">
-                                    <option value="MONDAY">Monday</option>
-                                    <option value="TUESDAY">Tuesday</option>
-                                    <option value="WEDNESDAY">Wednesday</option>
-                                    <option value="THURSDAY">Thursday</option>
-                                    <option value="FRIDAY">Friday</option>
-                                    <option value="SATURDAY">Saturday</option>
+                            <div class="form-group">
+                                <label for="daySelect">Day of the Week:</label>
+                                <select id="daySelect" name="dayOfWeek">
+                                    <option value="Monday">Monday</option>
+                                    <option value="Tuesday">Tuesday</option>
+                                    <option value="Wednesday">Wednesday</option>
+                                    <option value="Thursday">Thursday</option>
+                                    <option value="Friday">Friday</option>
+                                    <option value="Saturday">Saturday</option>
                                 </select>
                             </div>
 
                             <div class="form-group">
-                                <label>Start Time:</label>
-                                <input type="time" name="start_time" required>
+                                <label for="startTime">Start Time:</label>
+                                <input type="time" id="startTime" name="startTime">
                             </div>
 
                             <div class="form-group">
-                                <label>End Time:</label>
-                                <input type="time" name="end_time" required>
+                                <label for="endTime">End Time:</label>
+                                <input type="time" id="endTime" name="endTime">
                             </div>
                         </div>
 
-                        <input type="submit" class="btn btn-primary" value="Add Schedule">
+                        <button type="submit" class="btn btn-primary">Add New Schedule</button>
                     </form>
                 </div>
 
@@ -421,10 +426,10 @@
                     <h3>Edit Timetable Slot</h3>
                     <button class="close-modal-btn" onclick="closeEditModal()">&times;</button>
                 </div>
-                
+
                 <form action="EditScheduleServlet" method="POST">
                     <input type="hidden" name="scheduleId" id="edit_scheduleId">
-                    
+
                     <div class="form-grid">
                         <div class="form-group full-width">
                             <label>Day of the Week:</label>
@@ -461,17 +466,19 @@
             function openEditModal(scheduleId, dayOfWeek, startTime, endTime) {
                 document.getElementById("edit_scheduleId").value = scheduleId;
                 document.getElementById("edit_dayOfWeek").value = dayOfWeek;
-                
-                if (startTime.length > 5) startTime = startTime.substring(0, 5);
-                if (endTime.length > 5) endTime = endTime.substring(0, 5);
-                
+
+                if (startTime.length > 5)
+                    startTime = startTime.substring(0, 5);
+                if (endTime.length > 5)
+                    endTime = endTime.substring(0, 5);
+
                 document.getElementById("edit_startTime").value = startTime;
                 document.getElementById("edit_endTime").value = endTime;
-                
+
                 const modal = document.getElementById("editModal");
                 const modalBox = document.getElementById("modalBox");
                 modal.style.display = "flex";
-                
+
                 setTimeout(() => {
                     modalBox.style.transform = "translateY(0)";
                 }, 10);
@@ -480,14 +487,14 @@
             function closeEditModal() {
                 const modal = document.getElementById("editModal");
                 const modalBox = document.getElementById("modalBox");
-                
+
                 modalBox.style.transform = "translateY(-20px)";
                 setTimeout(() => {
                     modal.style.display = "none";
                 }, 300);
             }
 
-            window.onclick = function(event) {
+            window.onclick = function (event) {
                 const modal = document.getElementById("editModal");
                 if (event.target === modal) {
                     closeEditModal();
