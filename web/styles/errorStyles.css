@@ -1,0 +1,157 @@
+/* =========================================================
+   errorStyles.css  –  Error pages styled to match AdminDashboard.jsp
+   Stack: Bootstrap 5.3.2 + Font Awesome 6.4.2 (loaded by the JSPs)
+   ========================================================= */
+
+:root {
+    --primary-color:   #1e293b;
+    --secondary-color: #0f172a;
+    --accent-blue:     #3b82f6;
+    --light-bg:        #f8fafc;
+}
+
+/* ---- Base ---- */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+    height: 100%;
+}
+
+body {
+    background-color: var(--light-bg);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
+}
+
+/* ---- Header (matches navbar-custom) ---- */
+header {
+    background-color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    padding: 1rem 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* ---- Footer ---- */
+footer {
+    background-color: var(--primary-color);
+    color: #94a3b8;
+    text-align: center;
+    padding: 1rem 2.5rem;
+    font-size: 0.85rem;
+    margin-top: auto;
+}
+
+/* ---- Main error card (matches stat-card / card-table-container pattern) ---- */
+main.error-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 3rem 1.5rem;
+    gap: 1rem;
+}
+
+.error-card {
+    background: #ffffff;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    padding: 3rem 3.5rem;
+    max-width: 560px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* ---- Large error code (numeric or icon) ---- */
+.error-code {
+    font-size: clamp(3.5rem, 12vw, 7rem);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -2px;
+    color: var(--accent-blue);
+}
+
+/* Variant: non-numeric codes (DB, clock icon) */
+.error-code.db-icon,
+.error-code.session-icon {
+    font-size: clamp(2.5rem, 8vw, 4.5rem);
+    letter-spacing: 0;
+    color: var(--accent-blue);
+}
+
+/* ---- Title ---- */
+.error-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin: 0;
+}
+
+/* ---- Description ---- */
+.error-message {
+    font-size: 0.95rem;
+    color: #64748b;
+    line-height: 1.7;
+    max-width: 420px;
+    margin: 0;
+}
+
+/* ---- Technical detail strip (SQL state / exception message) ---- */
+.error-detail {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 0.5rem 1.25rem;
+    font-size: 0.8rem;
+    color: #dc2626;
+    max-width: 420px;
+    word-break: break-word;
+    text-align: left;
+    width: 100%;
+}
+
+/* ---- Return button (matches btn btn-primary from dashboard) ---- */
+.error-btn {
+    display: inline-block;
+    padding: 0.5rem 1.5rem;
+    background-color: var(--accent-blue);
+    color: #ffffff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-decoration: none;
+    border-radius: 6px;
+    border: none;
+    transition: background-color 0.2s ease, transform 0.15s ease;
+    margin-top: 0.25rem;
+}
+
+.error-btn:hover,
+.error-btn:focus {
+    background-color: #2563eb;
+    color: #ffffff;
+    transform: translateY(-1px);
+    text-decoration: none;
+    outline: none;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 576px) {
+    .error-card {
+        padding: 2rem 1.5rem;
+    }
+    header, footer {
+        padding: 0.75rem 1.25rem;
+    }
+}

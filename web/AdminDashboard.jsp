@@ -239,6 +239,7 @@
                     Audit operations broadcast actions to the enterprise PostgreSQL telemetry logger schema.
                 </p>
             </div>
+            <jsp:include page="AdminReportSection.jsp" />
         </div>
 
         <div id="panel-instructors" class="tab-panel-view">
@@ -579,12 +580,12 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td id="cal-day-Monday" class="small p-3 text-muted"><em>Vacant Matrix Node</em></td>
-                                    <td id="cal-day-Tuesday" class="small p-3 text-muted"><em>Vacant Matrix Node</em></td>
-                                    <td id="cal-day-Wednesday" class="small p-3 text-muted"><em>Vacant Matrix Node</em></td>
-                                    <td id="cal-day-Thursday" class="small p-3 text-muted"><em>Vacant Matrix Node</em></td>
-                                    <td id="cal-day-Friday" class="small p-3 text-muted"><em>Vacant Matrix Node</em></td>
-                                    <td id="cal-day-Saturday" class="small p-3 text-muted"><em>Vacant Matrix Node</em></td>
+                                    <td id="cal-day-MONDAY" class="small p-3 text-muted"><em>Vacant Matrix Node</em></td>
+                                    <td id="cal-day-TUESDAY" class="small p-3 text-muted"><em>Vacant Matrix Node</em></td>
+                                    <td id="cal-day-WEDNESDAY" class="small p-3 text-muted"><em>Vacant Matrix Node</em></td>
+                                    <td id="cal-day-THURSDAY" class="small p-3 text-muted"><em>Vacant Matrix Node</em></td>
+                                    <td id="cal-day-FRIDAY" class="small p-3 text-muted"><em>Vacant Matrix Node</em></td>
+                                    <td id="cal-day-SATURDAY" class="small p-3 text-muted"><em>Vacant Matrix Node</em></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -740,6 +741,44 @@
             </form>
         </div>
     </div>
+    <div class="modal fade" id="modalEditInstructorSchedule" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form class="modal-content" action="${pageContext.request.contextPath}/AdminDashboardServlet" method="POST">
+                <input type="hidden" name="action" value="editInstructorSchedule">
+                <input type="hidden" name="schedId" id="editInstSchedId">
+
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-calendar-days me-2"></i>Modify Timetable Schedule Slot</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Day of Week</label>
+                        <select name="classDay" id="editInstClassDay" class="form-select" required>
+                            <option value="MONDAY">Monday</option>
+                            <option value="TUESDAY">Tuesday</option>
+                            <option value="WEDNESDAY">Wednesday</option>
+                            <option value="THURSDAY">Thursday</option>
+                            <option value="FRIDAY">Friday</option>
+                            <option value="SATURDAY">Saturday</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Start Time</label>
+                        <input type="time" name="timeStart" id="editInstTimeStart" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">End Time</label>
+                        <input type="time" name="timeEnd" id="editInstTimeEnd" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalViewCalendar">Back</button>
+                    <button type="submit" class="btn btn-warning btn-sm text-dark fw-bold">Save Modifications</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script>
         const globalInstructorCalendars = {
@@ -748,6 +787,7 @@
                     "<%= escapeJs(entry.getKey()) %>": [
                         <% for (Map<String, String> s : entry.getValue()) { %>
                             {
+                                schedId: "<%= escapeJs(s.get("schedId")) %>",
                                 courseCode: "<%= escapeJs(s.get("courseCode")) %>",
                                 courseName: "<%= escapeJs(s.get("courseName")) %>",
                                 classDay: "<%= escapeJs(s.get("classDay")) %>",
@@ -782,11 +822,16 @@
                         <% for (Map<String, String> s : entry.getValue()) { %>
                             {
                                 schedId: "<%= escapeJs(s.get("schedId")) %>",
-                                courseName: "<%= escapeJs(s.get("courseName")) %>",
-                                // Compatibility fallback keys matching both selection criteria styles
-                                day: "<%= escapeJs(s.get("DAY_OF_WEEK") != null ? s.get("DAY_OF_WEEK") : (s.get("classDay") != null ? s.get("classDay") : s.get("day"))) %>",
-                                start: "<%= escapeJs(s.get("TIME_START") != null ? s.get("TIME_START") : (s.get("timeStart") != null ? s.get("timeStart") : s.get("start"))) %>",
-                                end: "<%= escapeJs(s.get("TIME_END") != null ? s.get("TIME_END") : (s.get("timeEnd") != null ? s.get("timeEnd") : s.get("end"))) %>"
+
+                                courseCode: "<%= escapeJs(s.get("COURSE_CODE") != null ? s.get("COURSE_CODE") : s.get("courseCode")) %>",
+
+                                courseName: "<%= escapeJs(s.get("COURSE_NAME") != null ? s.get("COURSE_NAME") : s.get("courseName")) %>",
+
+                                classDay: "<%= escapeJs(s.get("DAY_OF_WEEK") != null ? s.get("DAY_OF_WEEK") : s.get("classDay")) %>",
+
+                                timeStart: "<%= escapeJs(s.get("TIME_START") != null ? s.get("TIME_START") : s.get("timeStart")) %>",
+
+                                timeEnd: "<%= escapeJs(s.get("TIME_END") != null ? s.get("TIME_END") : s.get("timeEnd")) %>"
                             },
                         <% } %>
                     ],
@@ -817,38 +862,122 @@
             new bootstrap.Modal(document.getElementById('modalAssignSchedule')).show();
         }
 
-        function openCalendarModal(instructorId, instructorName) {
-            document.getElementById('calendarModalInstructorLabel').innerText = instructorName;
-            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-            days.forEach(d => {
-                const td = document.getElementById('cal-day-' + d);
-                if (td) {
-                    td.innerHTML = '<em>Vacant Matrix Node</em>';
-                    td.className = 'small p-3 text-muted';
+        function openCalendarModal(instId, lastName) {
+            // 1. Update the Modal's header label safely
+            const label = document.getElementById('calendarModalInstructorLabel');
+            if (label) label.innerText = lastName;
+
+            // 2. Define the active business days mapped in your calendarOutputTable matrix
+            const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+
+            // 3. Clear out any previous dynamic schedule text instead of targeting the nonexistent listGroup
+            days.forEach(day => {
+                const dayCell = document.getElementById('cal-day-' + day);
+                if (dayCell) {
+                    dayCell.innerHTML = '<span class="text-muted small fst-italic">Vacant Matrix Node</span>';
                 }
             });
-            const userScheds = globalInstructorCalendars[instructorId] || [];
-            userScheds.forEach(s => {
-                if (!s.classDay) return;
-                const normalizedDay = s.classDay.charAt(0).toUpperCase() + s.classDay.slice(1).toLowerCase();
-                const targetTd = document.getElementById('cal-day-' + normalizedDay);
-                if (targetTd) {
-                    if (targetTd.innerHTML.includes('Vacant Matrix Node')) {
-                        targetTd.innerHTML = '';
-                        targetTd.className = 'small p-2';
+
+            // 4. Populate your calendar cells using your global instructor database map array
+            const schedules = globalInstructorCalendars[instId] || [];
+            schedules.forEach(s => {
+                const dayKey = 'cal-day-' + s.classDay.toUpperCase();
+                const dayCell = document.getElementById(dayKey);
+                if (dayCell) {
+                    // Clean up placeholders if items exist
+                    if (dayCell.querySelector('em') || dayCell.innerText.includes('Vacant')) {
+                        dayCell.innerHTML = '';
                     }
 
-                    targetTd.innerHTML +=
-                        '<div class="p-2 mb-2 bg-primary-subtle text-primary rounded-2 border border-primary-subtle text-start">' +
-                            '<div class="fw-bold text-uppercase" style="font-size:0.75rem;">' + s.courseCode + '</div>' +
-                            '<div class="small fw-semibold text-truncate" style="max-width:130px;">' + s.courseName + '</div>' +
-                            '<div class="text-muted" style="font-size:0.7rem;">' +
-                                '<i class="fa-regular fa-clock me-1"></i>' + s.timeStart + ' - ' + s.timeEnd +
+                    // Build the block item inside the correct table column card matrix
+                    const item = document.createElement('div');
+                    item.className = 'p-2 mb-2 bg-primary text-white rounded shadow-sm text-start small position relative';
+                    item.innerHTML = 
+                        '<div class="d-flex justify-content-between align-items-start">' +
+                            '<strong style="max-width: 70%; display: inline-block;" class="text-truncate" title="' + s.courseName + '">' + s.courseCode + '</strong>' +
+                            '<div class="btn-group flex-shrink-0 ms-1">' +
+                                // Edit scheduling entity trigger control
+                                '<button type="button" class="btn btn-link text-warning p-0 me-2 border-0 bg-transparent" style="font-size: 0.85rem;" ' +
+                                    'onclick="event.stopPropagation(); populateEditInstructorScheduleModal(\'' + s.schedId + '\', \'' + s.classDay + '\', \'' + s.timeStart + '\', \'' + s.timeEnd + '\')">' +
+                                    '<i class="fa-solid fa-pen-to-square"></i>' +
+                                '</button>' +
+                                // Deletion pipeline link template button
+                                '<button type="button" class="btn btn-link text-danger p-0 border-0 bg-transparent" style="font-size: 0.85rem;" ' +
+                                    'onclick="event.stopPropagation(); triggerScheduleDeletion(\'' + s.schedId + '\')">' +
+                                    '<i class="fa-solid fa-trash-can"></i>' +
+                                '</button>' +
                             '</div>' +
-                        '</div>';
+                        '</div>' +
+                        '<div class="text-white-50 mt-1" style="font-size:0.75rem;">' + s.courseName + '</div>' +
+                        '<div class="mt-1 fw-bold" style="font-size:0.7rem;"><i class="fa-regular fa-clock me-1"></i>' + s.timeStart + ' - ' + s.timeEnd + '</div>';
+
+                    dayCell.appendChild(item);
                 }
             });
-            new bootstrap.Modal(document.getElementById('modalViewCalendar')).show();
+
+            // 5. Open the modal container matching your markup configuration layout
+            const viewModalEl = document.getElementById('modalViewCalendar');
+                let viewModalInstance = bootstrap.Modal.getInstance(viewModalEl);
+                if (!viewModalInstance) {
+                    viewModalInstance = new bootstrap.Modal(viewModalEl);
+                }
+                viewModalInstance.show();
+        }
+        function populateEditInstructorScheduleModal(schedId, currentDay, startTime, endTime) {
+            // Fill parameters directly onto your secondary form elements context
+            // Make sure you have a dedicated modal layout with ID 'modalEditInstructorSchedule' containing these input handles:
+            if(document.getElementById('editInstSchedId')) document.getElementById('editInstSchedId').value = schedId;
+            if(document.getElementById('editInstClassDay')) document.getElementById('editInstClassDay').value = currentDay;
+            if(document.getElementById('editInstTimeStart')) document.getElementById('editInstTimeStart').value = startTime;
+            if(document.getElementById('editInstTimeEnd')) document.getElementById('editInstTimeEnd').value = endTime;
+
+            // Transition between view calendar layers and the specific form modal instance tracking cleanly
+            const viewModalEl = document.getElementById('modalViewCalendar');
+            if (viewModalEl) {
+                 bootstrap.Modal.getInstance(viewModalEl)?.hide();
+            }
+
+            // Prevent layering leak duplication bugs
+            const editModalEl = document.getElementById('modalEditInstructorSchedule') || document.getElementById('modalAssignSchedule');
+            if(editModalEl) {
+                // Adjust values dynamically if editing inside your default modalAssignSchedule window
+                if(editModalEl.id === 'modalAssignSchedule') {
+                    document.getElementById('scheduleActionField').value = "editInstructorSchedule";
+                    document.getElementById('scheduleIdField').value = schedId;
+                    document.getElementById('scheduleModalHeaderTitle').innerHTML = '<i class="fa-solid fa-user-pen me-2"></i>Modify Course Schedule Node';
+                    editModalEl.querySelector('select[name="dayOfWeek"]').value = currentDay;
+                    editModalEl.querySelector('input[name="timeStart"]').value = startTime;
+                    editModalEl.querySelector('input[name="timeEnd"]').value = endTime;
+                }
+
+                let editModalInstance = bootstrap.Modal.getInstance(editModalEl);
+                if (!editModalInstance) {
+                    editModalInstance = new bootstrap.Modal(editModalEl);
+                }
+                editModalInstance.show();
+            }
+        }
+        function triggerScheduleDeletion(schedId) {
+            if (confirm("Are you sure you want to remove this assigned course item from this instructor's profile view?")) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '${pageContext.request.contextPath}/AdminDashboardServlet'; 
+
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                actionInput.value = 'deleteInstructorSchedule';
+
+                const idInput = document.createElement('input');
+                idInput.type = 'hidden';
+                idInput.name = 'schedId';
+                idInput.value = schedId;
+
+                form.appendChild(actionInput);
+                form.appendChild(idInput);
+                document.body.appendChild(form);
+                form.submit();
+            }
         }
 
         function populateEditInstructorModal(instId, uId, username, fName, lName, email) {

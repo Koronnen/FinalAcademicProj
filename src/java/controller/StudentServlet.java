@@ -24,6 +24,22 @@ import javax.servlet.http.HttpSession;
 
 public class StudentServlet extends HttpServlet {
     
+    private boolean isAuthorizedStudent(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return false;
+        }
+
+        // Retrieve the role object from the session
+        Object roleObj = session.getAttribute("role");
+        if (roleObj instanceof Integer) {
+            int userType = (Integer) roleObj;
+            System.out.println("usertype: " + userType);
+            return userType == 2; 
+        }
+        return false;
+    }
+    
     private Connection getDerbyConnection() throws SQLException, ClassNotFoundException {
         String driver = getServletContext().getInitParameter("derby.jdbcClassName");
         String url = getServletContext().getInitParameter("derby.jdbcDriverURL") + "://" +
@@ -80,9 +96,20 @@ public class StudentServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         
+        if (!isAuthorizedStudent(request)) {
+            HttpSession checkSession = request.getSession(false);
+            if (checkSession == null || checkSession.getAttribute("USER_ID") == null) {
+                request.getRequestDispatcher("/ErrorPages/error_session.jsp").forward(request, response);
+            } else {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            }
+            return;
+        }
+
+        // ADDED HERE: Verify login status via USER_ID session token
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("USER_ID") == null) {
-            response.sendRedirect("index.jsp");
+            response.sendRedirect(request.getContextPath() + "/index.jsp");
             return;
         }
 
@@ -109,8 +136,14 @@ public class StudentServlet extends HttpServlet {
                     }
                 }
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            request.getRequestDispatcher("/ErrorPages/error_sql.jsp").forward(request, response);
+            return;
         } catch (Exception e) {
             e.printStackTrace();
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            return;
         }
 
         String studentId = profile.getOrDefault("stuId", "");
@@ -184,11 +217,15 @@ public class StudentServlet extends HttpServlet {
                 }
                 courseCatalog.addAll(aggregationMap.values());
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            request.getRequestDispatcher("/ErrorPages/error_sql.jsp").forward(request, response);
+            return;
         } catch (Exception e) {
             e.printStackTrace();
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            return;
         }
-        
-        request.setAttribute("displayName", displayName);
         request.setAttribute("profile", profile);
         request.setAttribute("enrolledCourses", enrolledCourses);
         request.setAttribute("availableCourses", courseCatalog);
@@ -200,8 +237,18 @@ public class StudentServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        HttpSession session = request.getSession(false);
+        if (!isAuthorizedStudent(request)) {
+            HttpSession checkSession = request.getSession(false);
+            if (checkSession == null || checkSession.getAttribute("USER_ID") == null) {
+                request.getRequestDispatcher("/ErrorPages/error_session.jsp").forward(request, response);
+            } else {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            }
+            return;
+        }
 
+        // ADDED HERE: Verify login status via USER_ID session token
+        HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("USER_ID") == null) {
             response.sendRedirect(request.getContextPath() + "/index.jsp");
             return;
@@ -266,11 +313,15 @@ public class StudentServlet extends HttpServlet {
                         logAction(authorID + " Successfully Enrolled to Schedule Slot: " + schedId, authorID);                    
                     }
                 }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            request.getRequestDispatcher("/ErrorPages/error_sql.jsp").forward(request, response);
+            return;
         } catch (Exception e) {
             e.printStackTrace();
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            return;
         }
-
-        response.sendRedirect(request.getContextPath() + "/StudentServlet");
     }
     
     private void logAction(String actionMade, String authorId) {

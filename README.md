@@ -15,6 +15,8 @@ Download driver here (Platform-Independent): https://dev.mysql.com/downloads/con
 
 To establish valid database pipelines, you **must modify the credentials** explicitly defined within the application deployment descriptor (`web.xml`) to align with your target runtime environments.
 
+For the login credentials of the users (students/instructors), their default password is their **first name** in lowercase letters.
+
 ### Step 1: Open the Deployment Descriptor
 Navigate to the root configuration map of your target build:
 ```bash

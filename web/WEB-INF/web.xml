@@ -62,7 +62,7 @@
     </context-param>
     <context-param>
         <param-name>postgres.databaseName</param-name>
-        <param-value>logs?sslmode=disable</param-value>
+        <param-value>logs</param-value>
     </context-param>
     <context-param>
         <param-name>postgres.jdbcClassName</param-name>
@@ -144,6 +144,22 @@
             <param-value>6LfuAPIsAAAAAGuMrWw28J4yd79bJHQKpfOAf_9f</param-value>
         </init-param>
     </servlet>
+    <servlet>
+        <servlet-name>ReportServlet</servlet-name>
+        <servlet-class>controller.ReportServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>EditScheduleServlet</servlet-name>
+        <servlet-class>controller.EditScheduleServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>InstructorDashboardServlet</servlet-name>
+        <servlet-class>controller.InstructorDashboardServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>InstructorProfileServlet</servlet-name>
+        <servlet-class>controller.InstructorProfileServlet</servlet-class>
+    </servlet>
     <servlet-mapping>
         <servlet-name>LoginServlet</servlet-name>
         <url-pattern>/loginServlet</url-pattern>
@@ -164,22 +180,71 @@
         <servlet-name>SignUpServlet</servlet-name>
         <url-pattern>/SignUpServlet</url-pattern>
     </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ReportServlet</servlet-name>
+        <url-pattern>/ReportServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>EditScheduleServlet</servlet-name>
+        <url-pattern>/EditScheduleServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>InstructorDashboardServlet</servlet-name>
+        <url-pattern>/InstructorDashboardServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>StudentScheduleReportServlet</servlet-name>
+        <servlet-class>controller.StudentScheduleReportServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>InstructorScheduleReportServlet</servlet-name>
+        <servlet-class>controller.InstructorScheduleReportServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>InstructorProfileServlet</servlet-name>
+        <url-pattern>/InstructorProfileServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>StudentScheduleReportServlet</servlet-name>
+        <url-pattern>/StudentScheduleReportServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>InstructorScheduleReportServlet</servlet-name>
+        <url-pattern>/InstructorScheduleReportServlet</url-pattern>
+    </servlet-mapping>
     <session-config>
         <session-timeout>
             30
         </session-timeout>
     </session-config>
     <error-page>
+        <error-code>404</error-code>
+        <location>/ErrorPages/error_404.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>403</error-code>
+        <location>/ErrorPages/error_403.jsp</location>
+    </error-page>
+    <error-page>
+        <error-code>500</error-code>
+        <location>/ErrorPages/error_500.jsp</location>
+    </error-page>
+
+    <error-page>
         <exception-type>exception.InvalidSession</exception-type>
         <location>/ErrorPages/error_session.jsp</location>
     </error-page>
     <error-page>
-        <exception-type>exception.AuthenticationException</exception-type>
-        <location>/ErrorPages/error_3.jsp</location>
+        <exception-type>java.sql.SQLException</exception-type>
+        <location>/ErrorPages/error_sql.jsp</location>
     </error-page>
     <error-page>
-        <exception-type>exception.UserException</exception-type>
-        <location>/ErrorPages/error_user.jsp</location>
+        <exception-type>java.lang.Exception</exception-type>
+        <location>/ErrorPages/error_500.jsp</location>
+    </error-page>
+    <error-page>
+        <exception-type>exception.AuthenticationException</exception-type>
+        <location>/ErrorPages/error_403.jsp</location>
     </error-page>
     <welcome-file-list>
         <welcome-file>signUp.jsp</welcome-file>
