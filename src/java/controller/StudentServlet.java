@@ -203,7 +203,7 @@ public class StudentServlet extends HttpServlet {
         HttpSession session = request.getSession(false);
 
         if (session == null || session.getAttribute("USER_ID") == null) {
-            response.sendRedirect("index.jsp");
+            response.sendRedirect(request.getContextPath() + "/index.jsp");
             return;
         }
 
@@ -250,24 +250,22 @@ public class StudentServlet extends HttpServlet {
                 logAction("Cleared " + authorID + " Student Profile", authorID);
             }
             else if ("enrollCourse".equals(action)) {
-                String instCourseId = request.getParameter("instCourseId");
-                String schedId = request.getParameter("schedId"); // <--- Extract the new parameter sent by the JSP
+                    String schedId = request.getParameter("schedId"); 
+                    
+                    if (!stuId.isEmpty() && schedId != null && !schedId.isEmpty()) {
+                        String enrollmentId = generateNextCustomID(sqlConn, "ENROLLMENT", "STU_EN_ID", "ENR");
 
-                if (!stuId.isEmpty() && instCourseId != null && !instCourseId.isEmpty()) {
-                    String enrollmentId = generateNextCustomID(sqlConn, "ENROLLMENT", "STU_EN_ID", "ENR");
+                        String enrollSql = "INSERT INTO ENROLLMENT (STU_EN_ID, STU_ID, SCHED_ID) VALUES (?, ?, ?)";
+                        try (PreparedStatement ps = sqlConn.prepareStatement(enrollSql)) {
+                            ps.setString(1, enrollmentId);
+                            ps.setString(2, stuId);
+                            ps.setString(3, schedId); 
+                            ps.executeUpdate();
+                        }
 
-                    // Include SCHED_ID in your database insertion query
-                    String enrollSql = "INSERT INTO ENROLLMENT (STU_EN_ID, STU_ID, INST_C_ID, SCHED_ID) VALUES (?, ?, ?, ?)";
-                    try (PreparedStatement ps = sqlConn.prepareStatement(enrollSql)) {
-                        ps.setString(1, enrollmentId);
-                        ps.setString(2, stuId);
-                        ps.setString(3, instCourseId);
-                        ps.setString(4, schedId); // <--- Bind the selected timetable option to the statement
-                        ps.executeUpdate();
+                        logAction(authorID + " Successfully Enrolled to Schedule Slot: " + schedId, authorID);                    
                     }
-                    logAction(authorID + " Successfully Enrolled to Course Unit " + instCourseId + " Slot " + schedId, authorID);                    
                 }
-            }
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -12,6 +12,7 @@
     if (userType != 1) {
         System.out.println("reached, nto admin");
         if (activeSession != null) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
             activeSession.setAttribute("loginError", "Unauthorized access. Administrator privileges required.");
         }
         response.sendRedirect(request.getContextPath() + "/index.jsp");
@@ -238,6 +239,7 @@
                     Audit operations broadcast actions to the enterprise PostgreSQL telemetry logger schema.
                 </p>
             </div>
+            <jsp:include page="AdminReportSection.jsp" />
         </div>
 
         <div id="panel-instructors" class="tab-panel-view">

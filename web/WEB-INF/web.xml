@@ -62,7 +62,7 @@
     </context-param>
     <context-param>
         <param-name>postgres.databaseName</param-name>
-        <param-value>logs?sslmode=disable</param-value>
+        <param-value>logs</param-value>
     </context-param>
     <context-param>
         <param-name>postgres.jdbcClassName</param-name>
@@ -121,6 +121,18 @@
         </init-param>
     </servlet>
     <servlet>
+        <servlet-name>AdminDashboardServlet</servlet-name>
+        <servlet-class>controller.AdminDashboardServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>StudentServlet</servlet-name>
+        <servlet-class>controller.StudentServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>LogOutServlet</servlet-name>
+        <servlet-class>controller.LogOutServlet</servlet-class>
+    </servlet>
+    <servlet>
         <servlet-name>SignUpServlet</servlet-name>
         <servlet-class>controller.SignUpServlet</servlet-class>
         <init-param>
@@ -133,16 +145,20 @@
         </init-param>
     </servlet>
     <servlet>
-        <servlet-name>AdminDashboardServlet</servlet-name>
-        <servlet-class>controller.AdminDashboardServlet</servlet-class>
+        <servlet-name>ReportServlet</servlet-name>
+        <servlet-class>controller.ReportServlet</servlet-class>
     </servlet>
     <servlet>
-        <servlet-name>StudentServlet</servlet-name>
-        <servlet-class>controller.StudentServlet</servlet-class>
+        <servlet-name>EditScheduleServlet</servlet-name>
+        <servlet-class>controller.EditScheduleServlet</servlet-class>
     </servlet>
     <servlet>
-        <servlet-name>LogOutServlet</servlet-name>
-        <servlet-class>controller.LogOutServlet</servlet-class>
+        <servlet-name>InstructorDashboardServlet</servlet-name>
+        <servlet-class>controller.InstructorDashboardServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>InstructorProfileServlet</servlet-name>
+        <servlet-class>controller.InstructorProfileServlet</servlet-class>
     </servlet>
     <servlet-mapping>
         <servlet-name>LoginServlet</servlet-name>
@@ -151,10 +167,6 @@
     <servlet-mapping>
         <servlet-name>StudentServlet</servlet-name>
         <url-pattern>/StudentServlet</url-pattern>
-    </servlet-mapping>
-    <servlet-mapping>
-        <servlet-name>SignUpServlet</servlet-name>
-        <url-pattern>/SignUpServlet</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
         <servlet-name>AdminDashboardServlet</servlet-name>
@@ -171,6 +183,42 @@
     <servlet-mapping>
         <servlet-name>LogOutServlet</servlet-name>
         <url-pattern>/LogOutServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>SignUpServlet</servlet-name>
+        <url-pattern>/SignUpServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>ReportServlet</servlet-name>
+        <url-pattern>/ReportServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>EditScheduleServlet</servlet-name>
+        <url-pattern>/EditScheduleServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>InstructorDashboardServlet</servlet-name>
+        <url-pattern>/InstructorDashboardServlet</url-pattern>
+    </servlet-mapping>
+    <servlet>
+        <servlet-name>StudentScheduleReportServlet</servlet-name>
+        <servlet-class>controller.StudentScheduleReportServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>InstructorScheduleReportServlet</servlet-name>
+        <servlet-class>controller.InstructorScheduleReportServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>InstructorProfileServlet</servlet-name>
+        <url-pattern>/InstructorProfileServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>StudentScheduleReportServlet</servlet-name>
+        <url-pattern>/StudentScheduleReportServlet</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>InstructorScheduleReportServlet</servlet-name>
+        <url-pattern>/InstructorScheduleReportServlet</url-pattern>
     </servlet-mapping>
     <session-config>
         <session-timeout>
